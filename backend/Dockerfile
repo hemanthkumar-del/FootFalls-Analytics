@@ -6,7 +6,11 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install build dependencies if needed (none strictly required for binary wheels, but good practice)
-RUN pip install --user --no-cache-dir -r requirements.txt
+RUN pip install --user \
+    --default-timeout=300 \
+    --retries=10 \
+    --no-cache-dir \
+    -r requirements.txt
 
 # Stage 2: Production Image
 FROM python:3.11-slim
