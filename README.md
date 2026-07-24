@@ -4,6 +4,12 @@
 
 **An AI-powered retail footfall analytics system.** Built with Flutter, FastAPI, Firebase Authentication, Firebase Firestore, and YOLOv8. It provides Google Sign-In, live occupancy tracking, entry/exit counting, dynamic business intelligence dashboards, and a real-time binary websocket bridge.
 
+## Production APIs & Live Links
+
+- **Live Backend API**: `https://footfalls-analytics.onrender.com`
+- **API Documentation (Swagger UI)**: `https://footfalls-analytics.onrender.com/docs`
+- **API Health Check**: `https://footfalls-analytics.onrender.com/health`
+
 ---
 
 ## 🚀 Features
