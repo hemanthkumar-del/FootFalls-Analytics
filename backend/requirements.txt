@@ -1,0 +1,10 @@
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic==2.7.1
+pydantic-settings==2.2.1
+motor==3.4.0
+ultralytics==8.2.15
+opencv-python-headless==4.9.0.80
+websockets==12.0
+python-dotenv==1.0.1
+numpy<2.0.0

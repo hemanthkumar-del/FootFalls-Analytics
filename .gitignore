@@ -1,0 +1,46 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+.pub-cache/
+.pub/
+*.iml
+*.lock
+mobile-app/build/
+mobile-app/.dart_tool/
+
+# Android Studio / VS Code
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python / FastAPI
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+env/
+.env
+.venv
+*.log
+backend/venv/
+backend/.venv/
+
+# Firebase Secrets & Generated Configs
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+firebase-app-id.json
+
+# Model Weights
+*.pt
+*.pth
+*.onnx
+
+# OS generated files
+.DS_Store
+Thumbs.db

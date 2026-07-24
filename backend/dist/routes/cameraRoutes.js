@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const cameraController_1 = require("../controllers/cameraController");
+const auth_1 = require("../middleware/auth");
+const validate_1 = require("../middleware/validate");
+const validators_1 = require("../validators");
+const router = (0, express_1.Router)();
+router.use(auth_1.authenticate);
+router.get('/', cameraController_1.getCameras);
+router.post('/', (0, auth_1.authorize)(['Admin', 'Manager']), (0, validate_1.validate)(validators_1.cameraSchema), cameraController_1.createCamera);
+router.put('/:id', (0, auth_1.authorize)(['Admin', 'Manager']), (0, validate_1.validate)(validators_1.cameraSchema), cameraController_1.updateCamera);
+router.delete('/:id', (0, auth_1.authorize)(['Admin']), cameraController_1.deleteCamera);
+exports.default = router;

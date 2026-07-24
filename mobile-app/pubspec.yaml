@@ -1,0 +1,53 @@
+name: footfalls_app
+description: FootFalls Admin & Manager Dashboard
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.4.9
+  
+  # Networking
+  dio: ^5.4.0
+  web_socket_channel: ^3.0.1
+  
+  # Navigation
+  go_router: ^12.1.1
+  
+  # Storage
+  flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.2
+  
+  # UI & Charts
+  fl_chart: ^0.65.0
+  google_fonts: ^6.1.0
+  cached_network_image: ^3.3.0
+  
+  # Firebase
+  firebase_core: ^3.9.0
+  firebase_auth: ^5.3.4
+  cloud_firestore: ^5.6.0
+  google_sign_in: ^6.2.2
+
+  # Utils
+  intl: ^0.18.1
+  connectivity_plus: ^7.0.0
+  path_provider: ^2.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  # Code Generation
+  build_runner: ^2.4.8
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
