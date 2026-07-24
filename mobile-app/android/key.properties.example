@@ -1,0 +1,15 @@
+# ==========================================
+# FOOTFALLS ANALYTICS - ANDROID KEYSTORE
+# ==========================================
+# 1. Generate a keystore using keytool:
+#    keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+# 2. Place release.jks in the android/app directory.
+# 3. Rename this file to 'key.properties' and fill in the values below.
+# 
+# IMPORTANT: NEVER commit key.properties or your .jks file to source control.
+# Add them to your .gitignore!
+
+storePassword=<your-store-password>
+keyPassword=<your-key-password>
+keyAlias=<your-key-alias>
+storeFile=release.jks

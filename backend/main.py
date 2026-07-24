@@ -48,6 +48,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(health.router, prefix="/health", tags=["Health"])
 app.include_router(cameras.router, prefix="/cameras", tags=["Cameras"])
 app.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
