@@ -64,6 +64,9 @@ app.include_router(store.router, prefix="/store", tags=["Store Profile"])
 app.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
 app.include_router(websocket.router, tags=["WebSocket"])
 
+from prometheus_fastapi_instrumentator import Instrumentator
+Instrumentator().instrument(app).expose(app)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=settings.PORT, reload=False)

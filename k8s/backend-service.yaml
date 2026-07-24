@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: footfalls-backend-svc
+  namespace: footfalls-production
+spec:
+  selector:
+    app: footfalls-backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP

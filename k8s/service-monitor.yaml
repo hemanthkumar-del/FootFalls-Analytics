@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: footfalls-backend-monitor
+  namespace: footfalls-production
+  labels:
+    release: prometheus # Matches kube-prometheus-stack selector
+spec:
+  selector:
+    matchLabels:
+      app: footfalls-backend
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+  namespaceSelector:
+    matchNames:
+      - footfalls-production

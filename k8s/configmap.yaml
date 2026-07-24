@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: footfalls-config
+  namespace: footfalls-production
+data:
+  ENVIRONMENT: "production"
+  DB_NAME: "footfalls_db"
+  PORT: "8000"
+  # Replace with actual Azure/Production domains
+  CORS_ORIGINS: "https://dashboard.footfalls.app,https://api.footfalls.app"

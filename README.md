@@ -27,12 +27,22 @@ graph TD;
         Auth[Firebase Auth SDK]
     end
 
-    subgraph Backend [FastAPI Server]
-        API[REST & WebSocket Routers]
-        AuthGuard[JWT / Firebase Verification]
-        WorkerRegistry[Camera Worker Registry]
-        CVEngine[OpenCV + YOLOv8 + ByteTrack]
-        BIEngine[AI Insights Engine]
+    subgraph Azure Kubernetes Service [AKS Cluster]
+        Ingress[NGINX Ingress]
+        HPA[Horizontal Pod Autoscaler]
+        
+        subgraph Backend [FastAPI Pods]
+            API[REST & WebSocket Routers]
+            AuthGuard[JWT / Firebase Verification]
+            WorkerRegistry[Camera Worker Registry]
+            CVEngine[OpenCV + YOLOv8 + ByteTrack]
+            BIEngine[AI Insights Engine]
+        end
+
+        subgraph Observability [kube-prometheus-stack]
+            Prometheus[(Prometheus)]
+            Grafana[Grafana Dashboard]
+        end
     end
 
     subgraph Data [Persistence]
@@ -40,9 +50,13 @@ graph TD;
         Firebase[(Firebase IAM)]
     end
 
+    UI -->|HTTPS / WSS| Ingress
+    Ingress --> API
+    HPA -.->|Scales CPU > 75%| Backend
+    Prometheus -.->|Scrapes /metrics| API
+    Grafana --> Prometheus
+
     UI -->|State Updates| State
-    State -->|HTTP Requests| API
-    State -->|Binary Websocket| API
     Auth -->|Authenticate| Firebase
     Auth -->|Access Token| State
 
