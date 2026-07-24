@@ -19,6 +19,10 @@ class DashboardScreen extends ConsumerWidget {
         title: const Text('FootFalls Analytics'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () => context.go('/dashboard/notifications'),
+          ),
+          IconButton(
             icon: CircleAvatar(
               backgroundImage: user?.photoUrl != null ? NetworkImage(user!.photoUrl!) : null,
               child: user?.photoUrl == null ? const Icon(Icons.person) : null,
@@ -146,8 +150,9 @@ class DashboardScreen extends ConsumerWidget {
       children: [
         _buildNavCard(context, 'Live View', Icons.videocam, '/dashboard/live'),
         _buildNavCard(context, 'Cameras', Icons.camera_alt, '/dashboard/cameras'),
-        _buildNavCard(context, 'Reports', Icons.bar_chart, '/dashboard/reports'), // stub
-        _buildNavCard(context, 'Settings', Icons.settings, '/dashboard/settings'), // stub
+        _buildNavCard(context, 'Store Profile', Icons.store, '/dashboard/stores'),
+        _buildNavCard(context, 'Reports', Icons.bar_chart, '/dashboard/reports'),
+        _buildNavCard(context, 'Settings', Icons.settings, '/dashboard/settings'),
       ],
     );
   }

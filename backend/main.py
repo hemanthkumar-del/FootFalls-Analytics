@@ -3,50 +3,42 @@ import logging
 import asyncio
 from contextlib import asynccontextmanager
 from app.database import connect_to_mongo, close_mongo_connection
-from app.api import health, cameras, analytics, websocket
+from app.api import health, cameras, analytics, websocket, store, notifications
 from app.core.config import settings
 from app.services.detection_service import DetectionService
-from app.services.camera_service import CameraService
+from app.services.camera_service import worker_registry
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-# Keep a global reference to camera workers
-active_cameras = {}
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Initializing FootFalls Backend...")
+    logger.info("Initializing FootFalls Backend Phase 4...")
     await connect_to_mongo()
     
-    # Pre-load YOLO globally so camera threads don't block
     DetectionService()
     
-    # Fetch cameras from DB
     from app.repositories.camera_repository import CameraRepository
     from app.schemas.camera import CameraCreate
     camera_repo = CameraRepository()
-    cameras = await camera_repo.get_all()
+    cameras_list = await camera_repo.get_all_cameras()
     
-    if not cameras:
+    if not cameras_list:
         logger.info("No cameras found in database. Registering default 'Demo Camera'...")
-        new_cam = CameraCreate(name="Demo Camera", url="0", location="Entrance", status="online")
-        camera_doc = await camera_repo.create(new_cam)
-        cameras = [camera_doc]
+        new_cam = CameraCreate(name="Demo Camera", url="0", location="Entrance", status="online", isEnabled=True)
+        camera_doc = await camera_repo.create_camera(new_cam)
+        cameras_list = [camera_doc]
     
     main_loop = asyncio.get_running_loop()
-    for c in cameras:
-        logger.info(f"Starting camera worker for {c.get('name')} (URL: {c.get('url')})...")
-        cam = CameraService(camera_id=str(c['_id']), url=str(c['url']), main_loop=main_loop)
-        cam.start()
-        active_cameras[str(c['_id'])] = cam
+    for c in cameras_list:
+        if c.get("isEnabled", True):
+            logger.info(f"Starting camera worker for {c.get('name')} (URL: {c.get('url')})...")
+            worker_registry.add_worker(camera_id=str(c['_id']), url=str(c['url']), main_loop=main_loop)
     
     yield
     
-    # Shutdown
     logger.info("Shutting down workers...")
-    for cam in active_cameras.values():
-        cam.stop()
+    worker_registry.stop_all()
     await close_mongo_connection()
 
 app = FastAPI(
@@ -59,6 +51,8 @@ app = FastAPI(
 app.include_router(health.router, prefix="/health", tags=["Health"])
 app.include_router(cameras.router, prefix="/cameras", tags=["Cameras"])
 app.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
+app.include_router(store.router, prefix="/store", tags=["Store Profile"])
+app.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
 app.include_router(websocket.router, tags=["WebSocket"])
 
 if __name__ == "__main__":

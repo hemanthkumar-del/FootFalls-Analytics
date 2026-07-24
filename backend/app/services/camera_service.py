@@ -12,6 +12,40 @@ from app.api.websocket import video_manager
 
 logger = logging.getLogger(__name__)
 
+class CameraWorkerRegistry:
+    def __init__(self):
+        self.workers = {}
+        self.lock = threading.Lock()
+
+    def add_worker(self, camera_id: str, url: str, main_loop: asyncio.AbstractEventLoop):
+        with self.lock:
+            if camera_id in self.workers:
+                self.stop_worker(camera_id)
+            
+            worker = CameraService(camera_id, url, main_loop)
+            self.workers[camera_id] = worker
+            worker.start()
+            return True
+
+    def stop_worker(self, camera_id: str):
+        with self.lock:
+            worker = self.workers.pop(camera_id, None)
+            if worker:
+                worker.stop()
+                return True
+            return False
+
+    def get_worker(self, camera_id: str):
+        return self.workers.get(camera_id)
+
+    def stop_all(self):
+        with self.lock:
+            for worker in self.workers.values():
+                worker.stop()
+            self.workers.clear()
+
+worker_registry = CameraWorkerRegistry()
+
 class CameraService:
     def __init__(self, camera_id: str, url: str, main_loop: asyncio.AbstractEventLoop):
         self.camera_id = camera_id
