@@ -15,10 +15,11 @@ RUN pip install --user \
 # Stage 2: Production Image
 FROM python:3.11-slim
 
-# Install OpenCV headless dependencies
+# Install OpenCV headless dependencies and curl for HEALTHCHECK
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
