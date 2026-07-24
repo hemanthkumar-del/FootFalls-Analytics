@@ -1,172 +1,203 @@
-# FootFalls Analytics
-
-![FootFalls Banner](https://via.placeholder.com/1200x400?text=FootFalls+Analytics)
-
-**An AI-powered retail footfall analytics system.** Built with Flutter, FastAPI, Firebase Authentication, Firebase Firestore, and YOLOv8. It provides Google Sign-In, live occupancy tracking, entry/exit counting, dynamic business intelligence dashboards, and a real-time binary websocket bridge.
-
-## Production APIs & Live Links
-
-- **Live Backend API**: `https://footfalls-analytics.onrender.com`
-- **API Documentation (Swagger UI)**: `https://footfalls-analytics.onrender.com/docs`
-- **API Health Check**: `https://footfalls-analytics.onrender.com/health`
+<div align="center">
+  <img src="https://img.shields.io/badge/Status-Production_Ready-brightgreen?style=for-the-badge&logo=github" alt="Production Ready" />
+  <img src="https://img.shields.io/badge/Version-v1.0.0-blue?style=for-the-badge&logo=git" alt="Version 1.0.0" />
+  <img src="https://img.shields.io/badge/License-MIT-purple?style=for-the-badge" alt="MIT License" />
+  <br/>
+  <br/>
+  <h1>🚀 FootFalls Analytics</h1>
+  <p><b>An AI-powered Footfall Analytics platform converting CCTV camera feeds into real-time business insights using Computer Vision.</b></p>
+</div>
 
 ---
 
-## 🚀 Features
-
-- **Real-Time Edge Processing**: Leverages YOLOv8 and ByteTrack to perform directional line-counting natively.
-- **Ultra-Low Latency Streaming**: Custom WebSockets multiplex bounding-box metadata and JPEG frames.
-- **Smart Store Management**: Configure multiple cameras, business hours, and profile settings on the fly.
-- **AI Insights Engine**: Generates plain-text business recommendations dynamically based on historical Firestore aggregations.
-- **Comprehensive Reporting**: Export daily and weekly metrics to PDF and CSV formats.
-- **Production Ready**: Fully dockerizable Python backend and highly scalable Riverpod architecture for Flutter.
+## 📖 Table of Contents
+- [Project Overview](#-project-overview)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Architecture](#-architecture)
+- [Screenshots](#-screenshots)
+- [Installation](#-installation)
+- [API Documentation](#-api-documentation)
+- [Live Backend](#-live-backend)
+- [Download APK](#-download-apk)
+- [Folder Structure](#-folder-structure)
+- [Future Improvements](#-future-improvements)
+- [Author](#-author)
+- [License](#-license)
 
 ---
 
-## 🏗️ Architecture
+## 🎯 Project Overview
+
+FootFalls Analytics aims to revolutionize how physical stores analyze their customer traffic. By utilizing advanced computer vision AI directly on CCTV camera feeds, the system provides accurate, real-time footfall counting, occupancy tracking, and actionable business insights.
+
+**Why businesses need Footfall Analytics:**
+- **Optimize Staffing:** Align employee schedules with peak customer traffic hours.
+- **Conversion Rates:** Compare footfall metrics against sales data to calculate true conversion rates.
+- **Crowd Control:** Monitor live occupancy limits for safety and compliance.
+- **Marketing ROI:** Measure the impact of physical marketing campaigns by analyzing traffic trends.
+
+---
+
+## ✨ Features
+
+- **AI Person Detection**: Robust tracking using Ultralytics YOLOv8.
+- **Footfall Counting**: Real-time bi-directional (entry/exit) counter.
+- **Live Analytics Dashboard**: Highly interactive charts and metrics.
+- **Firebase Authentication**: Secure Google and Email/Password login.
+- **Firestore Database**: Low-latency, scalable NoSQL data storage.
+- **Real-time WebSocket Updates**: Live video streaming from the AI engine.
+- **REST APIs**: Full suite of well-documented backend endpoints.
+- **Mobile Application**: Cross-platform Flutter app for managers on the go.
+- **Cloud Deployment**: Containerized and deployed on Render.
+- **Responsive UI**: Adaptive mobile and desktop layouts.
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Frontend** | ![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=flat&logo=Flutter&logoColor=white) ![Riverpod](https://img.shields.io/badge/Riverpod-blue?style=flat) |
+| **Backend** | ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi) ![Python](https://img.shields.io/badge/python-3670A0?style=flat&logo=python&logoColor=ffdd54) |
+| **Database** | ![Firebase](https://img.shields.io/badge/firebase-%23039BE5.svg?style=flat&logo=firebase) (Firestore) |
+| **Authentication** | Firebase Authentication |
+| **AI Engine** | YOLOv8 (Ultralytics) |
+| **Realtime** | WebSockets |
+| **Deployment** | ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white) ![Kubernetes](https://img.shields.io/badge/kubernetes-%23326ce5.svg?style=flat&logo=kubernetes&logoColor=white) Render |
+| **Version Control**| ![Git](https://img.shields.io/badge/git-%23F05033.svg?style=flat&logo=git&logoColor=white) ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=flat&logo=github&logoColor=white) |
+
+---
+
+## 📐 Architecture
 
 ```mermaid
-graph TD;
-    subgraph Frontend [Flutter Application]
-        UI[Material 3 UI]
-        State[Riverpod State]
-        Auth[Firebase Auth SDK]
-    end
-
-    subgraph Azure Kubernetes Service [AKS Cluster]
-        Ingress[NGINX Ingress]
-        HPA[Horizontal Pod Autoscaler]
-        
-        subgraph Backend [FastAPI Pods]
-            API[REST & WebSocket Routers]
-            AuthGuard[JWT / Firebase Verification]
-            WorkerRegistry[Camera Worker Registry]
-            CVEngine[OpenCV + YOLOv8 + ByteTrack]
-            BIEngine[AI Insights Engine]
-        end
-
-        subgraph Observability [kube-prometheus-stack]
-            Prometheus[(Prometheus)]
-            Grafana[Grafana Dashboard]
-        end
-    end
-
-    subgraph Data [Persistence]
-        Firestore[(Firebase Firestore)]
-        Firebase[(Firebase IAM)]
-    end
-
-    UI -->|HTTPS / WSS| Ingress
-    Ingress --> API
-    HPA -.->|Scales CPU > 75%| Backend
-    Prometheus -.->|Scrapes /metrics| API
-    Grafana --> Prometheus
-
-    UI -->|State Updates| State
-    Auth -->|Authenticate| Firebase
-    Auth -->|Access Token| State
-
-    API --> AuthGuard
-    AuthGuard --> WorkerRegistry
-    WorkerRegistry --> CVEngine
-    CVEngine -->|Aggregation Pipelines| Firestore
-    API --> BIEngine
-    BIEngine -->|Metrics| Firestore
+graph TD
+    A[📱 Flutter App] -->|HTTPS / WSS| B(⚡ FastAPI Backend)
+    B -->|Admin SDK| C[(🔥 Firestore Database)]
+    B -->|Frames| D[🧠 YOLO AI Engine]
+    D -->|Detection Results| B
+    B -->|Real-time Metrics| E[📊 Analytics Dashboard]
+    
+    classDef app fill:#02569B,stroke:#fff,stroke-width:2px,color:#fff
+    classDef backend fill:#009688,stroke:#fff,stroke-width:2px,color:#fff
+    classDef db fill:#FFCA28,stroke:#fff,stroke-width:2px,color:#333
+    classDef ai fill:#E91E63,stroke:#fff,stroke-width:2px,color:#fff
+    classDef dash fill:#9C27B0,stroke:#fff,stroke-width:2px,color:#fff
+    
+    class A app
+    class B backend
+    class C db
+    class D ai
+    class E dash
 ```
 
 ---
 
-## 🛠️ Technology Stack
+## 📸 Screenshots
 
-| Component | Technology |
-| :--- | :--- |
-| **Mobile App** | Flutter, Riverpod, Dio, fl_chart |
-| **Backend API** | Python, FastAPI, Uvicorn, WebSockets |
-| **Computer Vision** | OpenCV, Ultralytics YOLOv8, ByteTrack |
-| **Database** | Firebase Firestore (Google Cloud async SDK) |
-| **Authentication** | Firebase Authentication (Google Sign-In) |
+| Login Screen | Live Dashboard |
+| :---: | :---: |
+| <img src="docs/screenshots/login.png" width="300" alt="Login"/> | <img src="docs/screenshots/dashboard.png" width="300" alt="Dashboard"/> |
+| **Camera Live Feed** | **Analytics & Trends** |
+| <img src="docs/screenshots/live_feed.png" width="300" alt="Live Feed"/> | <img src="docs/screenshots/analytics.png" width="300" alt="Analytics"/> |
+
+---
+
+## ⚙️ Installation
+
+### Backend
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/hemanthkumar-del/FootFalls-Analytics.git
+   cd FootFalls-Analytics/backend
+   ```
+2. **Install Python dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. **Run the FastAPI server:**
+   ```bash
+   uvicorn main:app --reload --port 8000
+   ```
+
+### Flutter Frontend
+
+1. **Navigate to the app directory:**
+   ```bash
+   cd ../mobile-app
+   ```
+2. **Install dependencies:**
+   ```bash
+   flutter pub get
+   ```
+3. **Run the application:**
+   ```bash
+   flutter run
+   ```
+
+---
+
+## 🔌 API Documentation
+
+Explore and test the full REST API securely directly from your browser:
+🔗 **[Swagger UI Documentation](https://footfalls-analytics.onrender.com/docs)**
+
+---
+
+## ☁️ Live Backend
+
+The production API is actively hosted on Render:
+🔗 **[https://footfalls-analytics.onrender.com](https://footfalls-analytics.onrender.com)**
+
+---
+
+## 📥 Download APK
+
+Want to try the app on your Android device? Download the latest production release APK from our GitHub Releases page!
+
+📱 **[Download FootFalls Analytics v1.0.0 APK](https://github.com/hemanthkumar-del/FootFalls-Analytics/releases/latest)**
 
 ---
 
 ## 📂 Folder Structure
 
 ```text
-FootFalls/
-├── backend/                  # FastAPI Application
-│   ├── app/
-│   │   ├── api/              # REST Endpoints (cameras, health, store, analytics)
-│   │   ├── core/             # Settings and Security
-│   │   ├── repositories/     # Firestore Abstraction Layer
-│   │   ├── schemas/          # Pydantic Data Models
-│   │   └── services/         # YOLO, Tracking, Workers, AI Insights
-│   ├── main.py               # Application Entry Point
-│   └── requirements.txt      # Python Dependencies
-├── mobile-app/               # Flutter Application
-│   ├── lib/
-│   │   ├── core/             # Router, Config, Networking
-│   │   ├── providers/        # Riverpod Controllers
-│   │   └── screens/          # Material UI Views
-│   ├── android/              # Native Android Build Configuration
-│   └── pubspec.yaml          # Flutter Dependencies
-├── CHANGELOG.md              # Version History
-├── RELEASE_NOTES.md          # 1.0.0 Release Notes
-└── DEPLOYMENT_GUIDE.md       # Production Deployment Manual
+FootFalls-Analytics/
+├── backend/            # FastAPI Python Server
+├── mobile-app/         # Flutter Android/iOS App
+├── ai-engine/          # YOLOv8 Computer Vision Models
+├── k8s/                # Kubernetes Deployment Manifests
+└── docs/               # Screenshots and Documentation Assets
 ```
 
 ---
 
-## ⚙️ Installation
+## 🔮 Future Improvements
 
-### Backend Setup
-1. Navigate to the backend directory: `cd backend`
-2. Create a virtual environment: `python -m venv venv`
-3. Activate it: `.\venv\Scripts\Activate` (Windows) or `source venv/bin/activate` (Mac/Linux)
-4. Install dependencies: `pip install -r requirements.txt`
-5. Copy environment template: `cp .env.example .env` and fill it out.
-6. Run the server: `python main.py`
-
-### Flutter Setup
-1. Navigate to the frontend directory: `cd mobile-app`
-2. Install dependencies: `flutter pub get`
-3. Run the app: `flutter run`
+- [ ] Multi-camera support
+- [ ] Heatmap Analytics
+- [ ] Face Recognition
+- [ ] Push Notifications
+- [ ] Offline Sync
+- [ ] Admin Web Dashboard
+- [ ] AI Prediction Models
 
 ---
 
-## 📚 API Documentation
+## 👨‍💻 Author
 
-### Cameras
-- `GET /cameras/`: List all cameras.
-- `POST /cameras/`: Register a new camera and trigger a capture thread.
-- `PUT /cameras/{id}`: Modify a camera's URL or location.
-- `DELETE /cameras/{id}`: Terminate thread and remove the camera.
-- `GET /cameras/status`: Retrieve RAM footprint, uptime, and FPS metrics.
-
-**Request Example (POST)**
-```json
-{
-  "name": "Front Door",
-  "url": "rtsp://admin:pass@192.168.1.100:554/stream1"
-}
-```
-
-### Analytics & Reports
-- `GET /analytics/advanced`: Fetches Dwell Time ranges and Peak Hours.
-- `GET /analytics/export/pdf`: Streams a dynamically generated ReportLab PDF buffer.
-- `GET /analytics/export/csv`: Streams a flat text comma-separated file.
-
-### Management
-- `GET /store/profile`: Fetch configuration details.
-- `GET /notifications`: Retrieve warnings emitted by the AI Engine.
-- `GET /health/`: Verify system resource utilization (CPU/Memory).
-
----
-
-## 🔮 Future Scope
-- **Multi-Store Management**: Expand RBAC models to support Franchise owners overseeing dozens of sub-stores.
-- **Heatmap Generation**: Finalize the aggregation pipelines to dynamically paint floorplan traffic maps based on coordinate tracking history.
-- **Hardware Acceleration**: Wrap the FastAPI container with DeepStream or TensorRT bindings to drastically lower the CPU footprint.
+**Hemanth Kumar Kodi**
+- GitHub: [@hemanthkumar-del](https://github.com/hemanthkumar-del)
+- LinkedIn: [Hemanth Kodi](https://www.linkedin.com/in/hemanth-kodi-253351328)
 
 ---
 
 ## 📄 License
-This project is licensed under the MIT License.
+
+This project is licensed under the **MIT License**. See the `LICENSE` file for more details.
+
+---
+
+> If you like this project, consider giving it a ⭐ on GitHub.
