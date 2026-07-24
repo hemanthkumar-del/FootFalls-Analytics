@@ -11,6 +11,7 @@ import 'package:footfalls_app/screens/forgot_password_screen.dart';
 import 'package:footfalls_app/screens/dashboard_screen.dart';
 import 'package:footfalls_app/screens/profile_screen.dart';
 import 'package:footfalls_app/screens/camera_management_screen.dart';
+import 'package:footfalls_app/screens/camera_monitoring_screen.dart';
 import 'package:footfalls_app/screens/other_screens.dart';
 
 final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((ref) {
@@ -44,7 +45,7 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((ref) {
         path: '/dashboard',
         builder: (context, state) => const DashboardScreen(),
         routes: [
-          GoRoute(path: 'live', builder: (context, state) => const LiveMonitoringScreen()),
+          GoRoute(path: 'live', builder: (context, state) => const CameraMonitoringScreen()),
           GoRoute(path: 'stores', builder: (context, state) => const StoresScreen()),
           GoRoute(path: 'cameras', builder: (context, state) => const CameraManagementScreen()),
           GoRoute(path: 'profile', builder: (context, state) => const ProfileScreen()),

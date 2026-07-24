@@ -144,8 +144,8 @@ class DashboardScreen extends ConsumerWidget {
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
       children: [
+        _buildNavCard(context, 'Live View', Icons.videocam, '/dashboard/live'),
         _buildNavCard(context, 'Cameras', Icons.camera_alt, '/dashboard/cameras'),
-        _buildNavCard(context, 'Stores', Icons.store, '/dashboard/stores'), // stub
         _buildNavCard(context, 'Reports', Icons.bar_chart, '/dashboard/reports'), // stub
         _buildNavCard(context, 'Settings', Icons.settings, '/dashboard/settings'), // stub
       ],

@@ -22,12 +22,24 @@ async def lifespan(app: FastAPI):
     # Pre-load YOLO globally so camera threads don't block
     DetectionService()
     
-    # Boot a test camera worker for the default webcam
-    logger.info("Starting default camera worker (URL: 0)...")
+    # Fetch cameras from DB
+    from app.repositories.camera_repository import CameraRepository
+    from app.schemas.camera import CameraCreate
+    camera_repo = CameraRepository()
+    cameras = await camera_repo.get_all()
+    
+    if not cameras:
+        logger.info("No cameras found in database. Registering default 'Demo Camera'...")
+        new_cam = CameraCreate(name="Demo Camera", url="0", location="Entrance", status="online")
+        camera_doc = await camera_repo.create(new_cam)
+        cameras = [camera_doc]
+    
     main_loop = asyncio.get_running_loop()
-    cam = CameraService(camera_id="cam_01", url="0", main_loop=main_loop)
-    cam.start()
-    active_cameras["cam_01"] = cam
+    for c in cameras:
+        logger.info(f"Starting camera worker for {c.get('name')} (URL: {c.get('url')})...")
+        cam = CameraService(camera_id=str(c['_id']), url=str(c['url']), main_loop=main_loop)
+        cam.start()
+        active_cameras[str(c['_id'])] = cam
     
     yield
     
