@@ -35,7 +35,7 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
             leading: const Icon(Icons.exit_to_app, color: Colors.red),
             onTap: () {
-              ref.read(authProvider.notifier).signOut();
+              ref.read(authProvider.notifier).logout();
             },
           ),
         ],

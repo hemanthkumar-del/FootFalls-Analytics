@@ -36,7 +36,13 @@ class VideoWebsocketService {
     _connectionStateController.add(false); // Connecting/Disconnected state
     disconnect();
 
-    final url = 'ws://${BackendConfig.baseUrl}/ws/video/$_currentCameraId';
+    String wsBase = BackendConfig.restApiUrl;
+    if (wsBase.startsWith('https://')) {
+      wsBase = wsBase.replaceFirst('https://', 'wss://');
+    } else if (wsBase.startsWith('http://')) {
+      wsBase = wsBase.replaceFirst('http://', 'ws://');
+    }
+    final url = '$wsBase/ws/video/$_currentCameraId';
     try {
       _channel = WebSocketChannel.connect(Uri.parse(url));
       
