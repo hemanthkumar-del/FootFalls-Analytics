@@ -2,8 +2,7 @@ from pydantic_settings import BaseSettings
 from typing import List
 
 class Settings(BaseSettings):
-    MONGO_URI: str = "mongodb://localhost:27017"
-    DB_NAME: str = "footfalls_db"
+    GOOGLE_APPLICATION_CREDENTIALS: str | None = None
     YOLO_MODEL_PATH: str = "yolov8n.pt"
     CONFIDENCE_THRESHOLD: float = 0.5
     PORT: int = 8000

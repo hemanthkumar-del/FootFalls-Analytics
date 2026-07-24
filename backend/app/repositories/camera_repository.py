@@ -1,39 +1,50 @@
-from app.database import get_database
+from app.firebase import get_firestore
 from app.schemas.camera import CameraCreate, CameraUpdate
-from bson import ObjectId
 from datetime import datetime, timezone
+import uuid
 
 class CameraRepository:
     def __init__(self):
-        self.collection = get_database().get_collection("cameras")
+        pass
+        
+    @property
+    def collection(self):
+        return get_firestore().collection("cameras")
 
     async def get_all_cameras(self):
-        cursor = self.collection.find({})
         cameras = []
-        async for document in cursor:
-            document["_id"] = str(document["_id"])
-            cameras.append(document)
+        async for doc in self.collection.stream():
+            data = doc.to_dict()
+            data["_id"] = doc.id
+            cameras.append(data)
         return cameras
 
     async def get_camera_by_id(self, camera_id: str):
         try:
-            document = await self.collection.find_one({"_id": ObjectId(camera_id)})
-            if document:
-                document["_id"] = str(document["_id"])
-            return document
+            doc_ref = self.collection.document(camera_id)
+            doc = await doc_ref.get()
+            if doc.exists:
+                data = doc.to_dict()
+                data["_id"] = doc.id
+                return data
+            return None
         except Exception:
             return None
 
     async def create_camera(self, camera: CameraCreate):
         doc = camera.model_dump()
-        doc["created_at"] = datetime.now(timezone.utc)
-        doc["updated_at"] = datetime.now(timezone.utc)
+        doc["created_at"] = datetime.now(timezone.utc).isoformat()
+        doc["updated_at"] = datetime.now(timezone.utc).isoformat()
         doc["fps"] = 0.0
         doc["uptime"] = 0
         doc["isEnabled"] = True
         doc["isStreaming"] = False
-        res = await self.collection.insert_one(doc)
-        doc["_id"] = str(res.inserted_id)
+        
+        # Firestore async client add() or document().set()
+        new_ref = self.collection.document()
+        await new_ref.set(doc)
+        
+        doc["_id"] = new_ref.id
         return doc
 
     async def update_camera(self, camera_id: str, update_data: CameraUpdate):
@@ -41,20 +52,19 @@ class CameraRepository:
         if not update_dict:
             return await self.get_camera_by_id(camera_id)
             
-        update_dict["updated_at"] = datetime.now(timezone.utc)
+        update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
         try:
-            await self.collection.update_one(
-                {"_id": ObjectId(camera_id)},
-                {"$set": update_dict}
-            )
+            doc_ref = self.collection.document(camera_id)
+            await doc_ref.update(update_dict)
             return await self.get_camera_by_id(camera_id)
         except Exception:
             return None
 
     async def delete_camera(self, camera_id: str):
         try:
-            result = await self.collection.delete_one({"_id": ObjectId(camera_id)})
-            return result.deleted_count > 0
+            doc_ref = self.collection.document(camera_id)
+            await doc_ref.delete()
+            return True
         except Exception:
             return False
 
@@ -63,14 +73,12 @@ class CameraRepository:
             update = {
                 "fps": fps,
                 "isStreaming": is_streaming,
-                "lastHeartbeat": datetime.now(timezone.utc)
+                "lastHeartbeat": datetime.now(timezone.utc).isoformat()
             }
             if error is not None:
                 update["errorMessage"] = error
                 
-            await self.collection.update_one(
-                {"_id": ObjectId(camera_id)},
-                {"$set": update}
-            )
+            doc_ref = self.collection.document(camera_id)
+            await doc_ref.update(update)
         except Exception:
             pass

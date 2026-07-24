@@ -5,14 +5,14 @@ This guide covers deploying the FootFalls Analytics backend to modern PaaS provi
 ## 1. Backend Deployment (Railway / Render)
 
 ### Prerequisites
-- A MongoDB Atlas account and cluster.
+- A Google Cloud Project with Firebase and Firestore enabled.
 - A Firebase Project (with Authentication enabled).
 - A GitHub repository containing the FootFalls source code.
 
 ### Step 1: Database Setup
-1. Log into MongoDB Atlas.
-2. Under "Network Access", ensure `0.0.0.0/0` is permitted (or the specific static IP of your Railway/Render instance).
-3. Retrieve your Connection String (URI). Replace `<password>` with your database user password.
+1. Log into the Firebase Console.
+2. Under "Build" > "Firestore Database", ensure your database is created.
+3. Download a Service Account JSON key from "Project Settings" > "Service Accounts".
 
 ### Step 2: PaaS Configuration
 1. Connect your GitHub repository to your PaaS of choice.
@@ -22,8 +22,7 @@ This guide covers deploying the FootFalls Analytics backend to modern PaaS provi
 
 ```env
 ENVIRONMENT=production
-MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/?retryWrites=true&w=majority
-DB_NAME=footfalls_db
+GOOGLE_APPLICATION_CREDENTIALS=/app/service-account.json
 JWT_SECRET=generate_a_strong_random_secret_here
 FIREBASE_PROJECT_ID=your-project-id
 CORS_ORIGINS=https://your-frontend-domain.com

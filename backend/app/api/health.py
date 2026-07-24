@@ -1,19 +1,20 @@
 from fastapi import APIRouter
 import psutil
 from app.services.camera_service import worker_registry
-from app.database import get_database
+from app.firebase import get_firestore
 
 router = APIRouter()
 
 @router.get("/")
 async def get_health():
-    # Check MongoDB status
-    mongo_status = "offline"
+    # Check Firestore status
+    db_status = "offline"
     try:
-        db = get_database()
+        db = get_firestore()
         if db is not None:
-            await db.command("ping")
-            mongo_status = "online"
+            # Simple read check
+            await db.collection("health_check").limit(1).get()
+            db_status = "online"
     except Exception:
         pass
 
@@ -24,8 +25,7 @@ async def get_health():
     return {
         "status": "online",
         "version": "1.0.0",
-        "mongodb_status": mongo_status,
-        "firebase_status": "online", # Handled via mobile SDK mostly
+        "database_status": db_status,
         "active_workers": len(worker_registry.workers),
         "system_health": {
             "cpu_usage_percent": cpu_percent,

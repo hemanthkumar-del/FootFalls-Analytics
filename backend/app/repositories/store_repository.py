@@ -1,15 +1,20 @@
-from app.database import get_database
+from app.firebase import get_firestore
 from app.schemas.store import StoreProfileBase, StoreProfileUpdate
 from datetime import datetime, timezone
-from bson import ObjectId
 
 class StoreRepository:
     def __init__(self):
-        self.collection = get_database().get_collection("store_profile")
+        pass
+        
+    @property
+    def collection(self):
+        return get_firestore().collection("store_profile")
         
     async def get_profile(self):
-        doc = await self.collection.find_one({})
-        if not doc:
+        doc_ref = self.collection.document("default")
+        doc = await doc_ref.get()
+        
+        if not doc.exists:
             # Create default profile
             default_profile = {
                 "store_name": "FootFalls Default Store",
@@ -20,22 +25,26 @@ class StoreRepository:
                 "opening_time": "09:00",
                 "closing_time": "21:00",
                 "timezone": "UTC",
-                "updated_at": datetime.now(timezone.utc)
+                "updated_at": datetime.now(timezone.utc).isoformat()
             }
-            res = await self.collection.insert_one(default_profile)
-            default_profile["_id"] = str(res.inserted_id)
+            await doc_ref.set(default_profile)
+            default_profile["_id"] = "default"
             return default_profile
-        doc["_id"] = str(doc["_id"])
-        return doc
+            
+        data = doc.to_dict()
+        data["_id"] = doc.id
+        return data
 
     async def update_profile(self, update_data: StoreProfileUpdate):
         update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
-        update_dict["updated_at"] = datetime.now(timezone.utc)
+        update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
         
-        doc = await self.collection.find_one({})
-        if doc:
-            await self.collection.update_one({"_id": doc["_id"]}, {"$set": update_dict})
+        doc_ref = self.collection.document("default")
+        doc = await doc_ref.get()
+        
+        if doc.exists:
+            await doc_ref.update(update_dict)
         else:
-            await self.collection.insert_one(update_dict)
+            await doc_ref.set(update_dict)
             
         return await self.get_profile()

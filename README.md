@@ -2,7 +2,7 @@
 
 ![FootFalls Banner](https://via.placeholder.com/1200x400?text=FootFalls+Analytics)
 
-**An AI-powered retail footfall analytics system.** Built with Flutter, FastAPI, Firebase Authentication, MongoDB, and YOLOv8. It provides Google Sign-In, live occupancy tracking, entry/exit counting, dynamic business intelligence dashboards, and a real-time binary websocket bridge.
+**An AI-powered retail footfall analytics system.** Built with Flutter, FastAPI, Firebase Authentication, Firebase Firestore, and YOLOv8. It provides Google Sign-In, live occupancy tracking, entry/exit counting, dynamic business intelligence dashboards, and a real-time binary websocket bridge.
 
 ---
 
@@ -11,7 +11,7 @@
 - **Real-Time Edge Processing**: Leverages YOLOv8 and ByteTrack to perform directional line-counting natively.
 - **Ultra-Low Latency Streaming**: Custom WebSockets multiplex bounding-box metadata and JPEG frames.
 - **Smart Store Management**: Configure multiple cameras, business hours, and profile settings on the fly.
-- **AI Insights Engine**: Generates plain-text business recommendations dynamically based on historical MongoDB aggregations.
+- **AI Insights Engine**: Generates plain-text business recommendations dynamically based on historical Firestore aggregations.
 - **Comprehensive Reporting**: Export daily and weekly metrics to PDF and CSV formats.
 - **Production Ready**: Fully dockerizable Python backend and highly scalable Riverpod architecture for Flutter.
 
@@ -46,7 +46,7 @@ graph TD;
     end
 
     subgraph Data [Persistence]
-        Mongo[(MongoDB Atlas)]
+        Firestore[(Firebase Firestore)]
         Firebase[(Firebase IAM)]
     end
 
@@ -63,9 +63,9 @@ graph TD;
     API --> AuthGuard
     AuthGuard --> WorkerRegistry
     WorkerRegistry --> CVEngine
-    CVEngine -->|Aggregation Pipelines| Mongo
+    CVEngine -->|Aggregation Pipelines| Firestore
     API --> BIEngine
-    BIEngine -->|Metrics| Mongo
+    BIEngine -->|Metrics| Firestore
 ```
 
 ---
@@ -77,7 +77,7 @@ graph TD;
 | **Mobile App** | Flutter, Riverpod, Dio, fl_chart |
 | **Backend API** | Python, FastAPI, Uvicorn, WebSockets |
 | **Computer Vision** | OpenCV, Ultralytics YOLOv8, ByteTrack |
-| **Database** | MongoDB (Motor Asyncio) |
+| **Database** | Firebase Firestore (Google Cloud async SDK) |
 | **Authentication** | Firebase Authentication (Google Sign-In) |
 
 ---
@@ -90,7 +90,7 @@ FootFalls/
 │   ├── app/
 │   │   ├── api/              # REST Endpoints (cameras, health, store, analytics)
 │   │   ├── core/             # Settings and Security
-│   │   ├── repositories/     # MongoDB Abstraction Layer
+│   │   ├── repositories/     # Firestore Abstraction Layer
 │   │   ├── schemas/          # Pydantic Data Models
 │   │   └── services/         # YOLO, Tracking, Workers, AI Insights
 │   ├── main.py               # Application Entry Point

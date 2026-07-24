@@ -2,7 +2,7 @@ from fastapi import FastAPI
 import logging
 import asyncio
 from contextlib import asynccontextmanager
-from app.database import connect_to_mongo, close_mongo_connection
+from app.firebase import firebase_service
 from app.api import health, cameras, analytics, websocket, store, notifications
 from app.core.config import settings
 from app.services.detection_service import DetectionService
@@ -13,33 +13,39 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Initializing FootFalls Backend Phase 4...")
-    await connect_to_mongo()
+    logger.info("Initializing FootFalls Backend (Firebase Edition)...")
+    firebase_service.initialize()
     
     DetectionService()
     
     from app.repositories.camera_repository import CameraRepository
     from app.schemas.camera import CameraCreate
     camera_repo = CameraRepository()
-    cameras_list = await camera_repo.get_all_cameras()
     
-    if not cameras_list:
-        logger.info("No cameras found in database. Registering default 'Demo Camera'...")
-        new_cam = CameraCreate(name="Demo Camera", url="0", location="Entrance", status="online", isEnabled=True)
-        camera_doc = await camera_repo.create_camera(new_cam)
-        cameras_list = [camera_doc]
+    cameras_list = []
+    try:
+        cameras_list = await camera_repo.get_all_cameras()
+        
+        if not cameras_list:
+            logger.info("No cameras found in database. Registering default 'Demo Camera'...")
+            new_cam = CameraCreate(name="Demo Camera", url="0", location="Entrance", status="online", isEnabled=True)
+            camera_doc = await camera_repo.create_camera(new_cam)
+            cameras_list = [camera_doc]
+    except Exception as e:
+        logger.error(f"Could not connect to Firebase during startup: {e}")
     
     main_loop = asyncio.get_running_loop()
     for c in cameras_list:
         if c.get("isEnabled", True):
             logger.info(f"Starting camera worker for {c.get('name')} (URL: {c.get('url')})...")
-            worker_registry.add_worker(camera_id=str(c['_id']), url=str(c['url']), main_loop=main_loop)
+            # id comes from either 'id' or '_id'
+            cam_id = str(c.get('id') or c.get('_id'))
+            worker_registry.add_worker(camera_id=cam_id, url=str(c['url']), main_loop=main_loop)
     
     yield
     
     logger.info("Shutting down workers...")
     worker_registry.stop_all()
-    await close_mongo_connection()
 
 app = FastAPI(
     title="FootFalls AI Backend",
