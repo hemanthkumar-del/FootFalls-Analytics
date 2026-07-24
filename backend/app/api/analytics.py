@@ -26,14 +26,78 @@ async def get_today_analytics(repo: AnalyticsRepository = Depends(get_analytics_
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     return await repo.get_today_summary(today_str)
 
-@router.get("/hourly")
-async def get_hourly_analytics():
-    return {"message": "Hourly analytics not implemented yet"}
+@router.get("/advanced")
+async def get_advanced_analytics(repo: AnalyticsRepository = Depends(get_analytics_repo)):
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    hourly = await repo.get_hourly_trends(today_str)
+    daily = await repo.get_daily_trends(7)
+    dwell = await repo.get_dwell_time_stats()
+    
+    # Calculate current occupancy from today's peak or current WS logic
+    today_summary = await repo.get_today_summary(today_str)
+    curr_occ = today_summary.get("peak_occupancy", 0) # approximation for insights
 
-@router.get("/weekly")
-async def get_weekly_analytics():
-    return {"message": "Weekly analytics not implemented yet"}
+    # Generate Insights
+    from app.services.ai_insights_engine import AIInsightsEngine
+    engine = AIInsightsEngine()
+    insights = engine.generate_insights(hourly, daily, dwell, curr_occ)
 
-@router.get("/monthly")
-async def get_monthly_analytics():
-    return {"message": "Monthly analytics not implemented yet"}
+    return {
+        "hourly": hourly,
+        "daily": daily,
+        "dwell": dwell,
+        "insights": insights
+    }
+
+@router.get("/export/csv")
+async def export_csv(repo: AnalyticsRepository = Depends(get_analytics_repo)):
+    from fastapi.responses import PlainTextResponse
+    from app.services.export_service import ExportService
+    
+    daily = await repo.get_daily_trends(30)
+    csv_str = ExportService().generate_csv(daily, headers=["date", "entries", "exits"])
+    
+    return PlainTextResponse(
+        content=csv_str,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=footfalls_report.csv"}
+    )
+
+@router.get("/export/pdf")
+async def export_pdf(repo: AnalyticsRepository = Depends(get_analytics_repo)):
+    from fastapi.responses import Response
+    from app.services.export_service import ExportService
+    from app.services.ai_insights_engine import AIInsightsEngine
+    
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    hourly = await repo.get_hourly_trends(today_str)
+    daily = await repo.get_daily_trends(7)
+    dwell = await repo.get_dwell_time_stats()
+    
+    today_summary = await repo.get_today_summary(today_str)
+    curr_occ = today_summary.get("peak_occupancy", 0)
+    
+    engine = AIInsightsEngine()
+    insights = engine.generate_insights(hourly, daily, dwell, curr_occ)
+    
+    pdf_bytes = ExportService().generate_pdf("FootFalls Analytics Report", insights, daily)
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=footfalls_report.pdf"}
+    )
+
+@router.get("/heatmap")
+async def get_heatmap():
+    # Return mock zones and weights for the Flutter frontend
+    return {
+        "zones": [
+            {"x": 0.2, "y": 0.3, "weight": 0.8},
+            {"x": 0.5, "y": 0.5, "weight": 0.9},
+            {"x": 0.8, "y": 0.2, "weight": 0.4},
+            {"x": 0.5, "y": 0.8, "weight": 0.6},
+            {"x": 0.1, "y": 0.9, "weight": 0.2},
+        ]
+    }
