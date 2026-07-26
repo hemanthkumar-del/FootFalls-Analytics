@@ -60,15 +60,10 @@ class CameraMonitoringScreen extends ConsumerWidget {
             child: state.latestFrame != null
                 ? LayoutBuilder(
                     builder: (context, constraints) {
-                      return CustomPaint(
-                        foregroundPainter: BoundingBoxPainter(
-                          boxes: state.latestFrame!.metadata.boxes,
-                        ),
-                        child: Image.memory(
-                          state.latestFrame!.imageBytes,
-                          gaplessPlayback: true,
-                          fit: BoxFit.contain,
-                        ),
+                      return Image.memory(
+                        state.latestFrame!.imageBytes,
+                        gaplessPlayback: true,
+                        fit: BoxFit.contain,
                       );
                     }
                   )
@@ -165,68 +160,5 @@ class CameraMonitoringScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-}
-
-class BoundingBoxPainter extends CustomPainter {
-  final List<BoundingBox> boxes;
-  // OpenCV resizes to 640x640 before sending
-  final double originalWidth = 640.0;
-  final double originalHeight = 640.0;
-
-  BoundingBoxPainter({required this.boxes});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (boxes.isEmpty) return;
-
-    // Calculate scale and offset since Image uses BoxFit.contain
-    double scaleX = size.width / originalWidth;
-    double scaleY = size.height / originalHeight;
-    double scale = scaleX < scaleY ? scaleX : scaleY;
-
-    double displayWidth = originalWidth * scale;
-    double displayHeight = originalHeight * scale;
-
-    double dx = (size.width - displayWidth) / 2;
-    double dy = (size.height - displayHeight) / 2;
-
-    final paint = Paint()
-      ..color = Colors.blueAccent
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
-
-    final textPainter = TextPainter(
-      textDirection: TextDirection.ltr,
-    );
-
-    for (var box in boxes) {
-      // Map coordinates to display size
-      double left = box.x1 * scale + dx;
-      double top = box.y1 * scale + dy;
-      double right = box.x2 * scale + dx;
-      double bottom = box.y2 * scale + dy;
-
-      final rect = Rect.fromLTRB(left, top, right, bottom);
-      canvas.drawRect(rect, paint);
-
-      // Draw ID label
-      textPainter.text = TextSpan(
-        text: 'ID: ${box.id} ${(box.confidence * 100).toInt()}%',
-        style: const TextStyle(
-          color: Colors.blueAccent,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          backgroundColor: Colors.black54,
-        ),
-      );
-      textPainter.layout();
-      textPainter.paint(canvas, Offset(left, top - 16));
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant BoundingBoxPainter oldDelegate) {
-    return true; // We always repaint when frame updates
   }
 }

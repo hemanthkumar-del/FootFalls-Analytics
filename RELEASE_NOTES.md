@@ -1,4 +1,4 @@
-# 🚀 FootFalls Analytics v1.0.0
+# 🚀 FootFalls Analytics v1.0.1
 
 First stable production release of FootFalls Analytics.
 
