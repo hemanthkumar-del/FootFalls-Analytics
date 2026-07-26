@@ -13,9 +13,9 @@ class BackendConfig {
   
   static String get webSocketUrl {
     if (restApiUrl.startsWith('https://')) {
-      return restApiUrl.replaceFirst('https://', 'wss://') + '/ws/live';
+      return '${restApiUrl.replaceFirst('https://', 'wss://')}/ws/live';
     }
-    return restApiUrl.replaceFirst('http://', 'ws://') + '/ws/live';
+    return '${restApiUrl.replaceFirst('http://', 'ws://')}/ws/live';
   }
 }
 

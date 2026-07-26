@@ -107,7 +107,7 @@ class _StoreProfileScreenState extends ConsumerState<StoreProfileScreen> {
                   'email': _emailController.text,
                   'address': _addressController.text,
                 });
-                if (mounted && success) {
+                if (context.mounted && success) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated successfully')));
                 }
               }

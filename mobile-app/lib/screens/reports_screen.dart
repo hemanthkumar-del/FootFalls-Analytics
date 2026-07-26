@@ -263,7 +263,7 @@ class HeatmapPainter extends CustomPainter {
       final weight = (zone['weight'] as double);
 
       final paint = Paint()
-        ..color = Colors.red.withOpacity(weight * 0.7)
+        ..color = Colors.red.withValues(alpha: weight * 0.7)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
 
       canvas.drawCircle(Offset(x, y), 30 + (weight * 20), paint);

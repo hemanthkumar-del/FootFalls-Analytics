@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:footfalls_app/models/camera_model.dart';
-import 'package:footfalls_app/models/video_frame_model.dart';
 import 'package:footfalls_app/providers/monitoring_controller.dart';
-import 'package:go_router/go_router.dart';
 
 class CameraMonitoringScreen extends ConsumerWidget {
   const CameraMonitoringScreen({super.key});

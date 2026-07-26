@@ -18,14 +18,18 @@ class NotificationController extends StateNotifier<List<dynamic>> {
     try {
       final res = await _dio.get('/notifications');
       state = res.data;
-    } catch (e) {}
+    } catch (e) {
+      debugPrint('Error fetching notifications: $e');
+    }
   }
 
   Future<void> markAsRead(String id) async {
     try {
       await _dio.patch('/notifications/$id/read');
       await fetchNotifications();
-    } catch (e) {}
+    } catch (e) {
+      debugPrint('Error marking notification as read: $e');
+    }
   }
 }
 
