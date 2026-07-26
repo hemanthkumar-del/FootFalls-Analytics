@@ -1,203 +1,218 @@
 <div align="center">
-  <img src="https://img.shields.io/badge/Status-Production_Ready-brightgreen?style=for-the-badge&logo=github" alt="Production Ready" />
-  <img src="https://img.shields.io/badge/Version-v1.0.0-blue?style=for-the-badge&logo=git" alt="Version 1.0.0" />
-  <img src="https://img.shields.io/badge/License-MIT-purple?style=for-the-badge" alt="MIT License" />
-  <br/>
-  <br/>
-  <h1>🚀 FootFalls Analytics</h1>
-  <p><b>An AI-powered Footfall Analytics platform converting CCTV camera feeds into real-time business insights using Computer Vision.</b></p>
+  
+# 🛒 FootFalls Analytics
+
+**AI-Powered Real-Time Footfall Analytics System for Retail Stores**
+
+[![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white)](https://flutter.dev)
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://www.python.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Firebase](https://img.shields.io/badge/firebase-%23039BE5.svg?style=for-the-badge&logo=firebase)](https://firebase.google.com/)
+[![Render](https://img.shields.io/badge/Render-%46E3B7.svg?style=for-the-badge&logo=render&logoColor=white)](https://render.com/)
+
 </div>
 
 ---
 
-## 📖 Table of Contents
-- [Project Overview](#-project-overview)
-- [Features](#-features)
-- [Tech Stack](#-tech-stack)
-- [Architecture](#-architecture)
-- [Screenshots](#-screenshots)
-- [Installation](#-installation)
-- [API Documentation](#-api-documentation)
-- [Live Backend](#-live-backend)
-- [Download APK](#-download-apk)
-- [Folder Structure](#-folder-structure)
-- [Future Improvements](#-future-improvements)
-- [Author](#-author)
-- [License](#-license)
+## 📖 Overview
 
----
+**FootFalls Analytics** is a state-of-the-art computer vision application designed to provide retail stores with deep insights into customer traffic. By leveraging advanced object detection (**YOLOv8**) and tracking (**ByteTrack**), the system processes live camera feeds to autonomously monitor occupancy, count entries and exits, and stream real-time analytics to a mobile dashboard.
 
-## 🎯 Project Overview
-
-FootFalls Analytics aims to revolutionize how physical stores analyze their customer traffic. By utilizing advanced computer vision AI directly on CCTV camera feeds, the system provides accurate, real-time footfall counting, occupancy tracking, and actionable business insights.
-
-**Why businesses need Footfall Analytics:**
-- **Optimize Staffing:** Align employee schedules with peak customer traffic hours.
-- **Conversion Rates:** Compare footfall metrics against sales data to calculate true conversion rates.
-- **Crowd Control:** Monitor live occupancy limits for safety and compliance.
-- **Marketing ROI:** Measure the impact of physical marketing campaigns by analyzing traffic trends.
+Whether you are optimizing store layouts, scheduling staff based on peak hours, or simply monitoring capacity, FootFalls Analytics provides a comprehensive, scalable, and production-ready solution.
 
 ---
 
 ## ✨ Features
 
-- **AI Person Detection**: Robust tracking using Ultralytics YOLOv8.
-- **Footfall Counting**: Real-time bi-directional (entry/exit) counter.
-- **Live Analytics Dashboard**: Highly interactive charts and metrics.
-- **Firebase Authentication**: Secure Google and Email/Password login.
-- **Firestore Database**: Low-latency, scalable NoSQL data storage.
-- **Real-time WebSocket Updates**: Live video streaming from the AI engine.
-- **REST APIs**: Full suite of well-documented backend endpoints.
-- **Mobile Application**: Cross-platform Flutter app for managers on the go.
-- **Cloud Deployment**: Containerized and deployed on Render.
-- **Responsive UI**: Adaptive mobile and desktop layouts.
+- **Real-time People Detection**: High-accuracy pedestrian detection utilizing YOLOv8.
+- **Multi-Object Tracking**: Persistent ID tracking through occlusions using ByteTrack.
+- **Live Camera Monitoring**: Low-latency video streaming to the mobile app via WebSockets.
+- **Entry & Exit Counting**: Virtual tripwires automatically log store traffic.
+- **Occupancy Monitoring**: Real-time capacity calculations.
+- **Analytics Dashboard**: Beautiful UI for visualizing traffic trends.
+- **Camera Management**: Register, enable, and monitor multiple camera streams.
+- **Firebase Integration**: Secure user authentication and cloud synchronization.
+- **FastAPI REST API**: High-performance backend routing and endpoints.
+- **Analytics Export**: Generate and download reports in CSV/PDF formats.
+- **Heatmap Analytics**: Spatial analysis of high-traffic zones.
+- **Production-ready**: Fully compiled Android APK ready for deployment.
 
 ---
 
-## 🛠 Tech Stack
+## 🛠️ Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Frontend** | ![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=flat&logo=Flutter&logoColor=white) ![Riverpod](https://img.shields.io/badge/Riverpod-blue?style=flat) |
-| **Backend** | ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi) ![Python](https://img.shields.io/badge/python-3670A0?style=flat&logo=python&logoColor=ffdd54) |
-| **Database** | ![Firebase](https://img.shields.io/badge/firebase-%23039BE5.svg?style=flat&logo=firebase) (Firestore) |
-| **Authentication** | Firebase Authentication |
-| **AI Engine** | YOLOv8 (Ultralytics) |
-| **Realtime** | WebSockets |
-| **Deployment** | ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white) ![Kubernetes](https://img.shields.io/badge/kubernetes-%23326ce5.svg?style=flat&logo=kubernetes&logoColor=white) Render |
-| **Version Control**| ![Git](https://img.shields.io/badge/git-%23F05033.svg?style=flat&logo=git&logoColor=white) ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=flat&logo=github&logoColor=white) |
+| Category | Technology |
+| :--- | :--- |
+| **Frontend** | Flutter, Dart, Riverpod |
+| **Backend** | FastAPI, Python, Uvicorn |
+| **AI / Computer Vision** | YOLOv8 (Ultralytics), ByteTrack, OpenCV |
+| **Database** | MongoDB (Motor Async) |
+| **Cloud Hosting** | Render |
+| **Auth & Services** | Firebase Admin SDK, Google Cloud Credentials |
+| **Communication** | REST API, WebSockets (Binary + JSON payloads) |
 
 ---
 
-## 📐 Architecture
+## 🏗️ Architecture
 
 ```mermaid
 graph TD
-    A[📱 Flutter App] -->|HTTPS / WSS| B(⚡ FastAPI Backend)
-    B -->|Admin SDK| C[(🔥 Firestore Database)]
-    B -->|Frames| D[🧠 YOLO AI Engine]
-    D -->|Detection Results| B
-    B -->|Real-time Metrics| E[📊 Analytics Dashboard]
-    
-    classDef app fill:#02569B,stroke:#fff,stroke-width:2px,color:#fff
-    classDef backend fill:#009688,stroke:#fff,stroke-width:2px,color:#fff
-    classDef db fill:#FFCA28,stroke:#fff,stroke-width:2px,color:#333
-    classDef ai fill:#E91E63,stroke:#fff,stroke-width:2px,color:#fff
-    classDef dash fill:#9C27B0,stroke:#fff,stroke-width:2px,color:#fff
-    
-    class A app
-    class B backend
-    class C db
-    class D ai
-    class E dash
+    subgraph Mobile Application
+        F[Flutter App]
+    end
+
+    subgraph FastAPI Backend
+        API[REST API & WebSockets]
+        C[Camera Service / OpenCV]
+        AI[YOLOv8 + ByteTrack]
+    end
+
+    subgraph Cloud Infrastructure
+        DB[(MongoDB)]
+        FB[Firebase Auth/Services]
+    end
+
+    F <-->|HTTP/REST & WebSockets| API
+    API <--> C
+    C <--> AI
+    API <--> DB
+    API <--> FB
 ```
 
 ---
 
-## 📸 Screenshots
-
-| Login Screen | Live Dashboard |
-| :---: | :---: |
-| <img src="docs/screenshots/login.png" width="300" alt="Login"/> | <img src="docs/screenshots/dashboard.png" width="300" alt="Dashboard"/> |
-| **Camera Live Feed** | **Analytics & Trends** |
-| <img src="docs/screenshots/live_feed.png" width="300" alt="Live Feed"/> | <img src="docs/screenshots/analytics.png" width="300" alt="Analytics"/> |
-
----
-
-## ⚙️ Installation
-
-### Backend
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/hemanthkumar-del/FootFalls-Analytics.git
-   cd FootFalls-Analytics/backend
-   ```
-2. **Install Python dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. **Run the FastAPI server:**
-   ```bash
-   uvicorn main:app --reload --port 8000
-   ```
-
-### Flutter Frontend
-
-1. **Navigate to the app directory:**
-   ```bash
-   cd ../mobile-app
-   ```
-2. **Install dependencies:**
-   ```bash
-   flutter pub get
-   ```
-3. **Run the application:**
-   ```bash
-   flutter run
-   ```
-
----
-
-## 🔌 API Documentation
-
-Explore and test the full REST API securely directly from your browser:
-🔗 **[Swagger UI Documentation](https://footfalls-analytics.onrender.com/docs)**
-
----
-
-## ☁️ Live Backend
-
-The production API is actively hosted on Render:
-🔗 **[https://footfalls-analytics.onrender.com](https://footfalls-analytics.onrender.com)**
-
----
-
-## 📥 Download APK
-
-Want to try the app on your Android device? Download the latest production release APK from our GitHub Releases page!
-
-📱 **[Download FootFalls Analytics v1.0.0 APK](https://github.com/hemanthkumar-del/FootFalls-Analytics/releases/latest)**
-
----
-
-## 📂 Folder Structure
+## 📁 Project Structure
 
 ```text
 FootFalls-Analytics/
-├── backend/            # FastAPI Python Server
-├── mobile-app/         # Flutter Android/iOS App
-├── ai-engine/          # YOLOv8 Computer Vision Models
-├── k8s/                # Kubernetes Deployment Manifests
-└── docs/               # Screenshots and Documentation Assets
+│
+├── backend/                  # Python FastAPI Backend
+│   ├── app/
+│   │   ├── api/              # REST & WebSocket endpoints
+│   │   ├── core/             # Configuration & DB setup
+│   │   ├── models/           # Pydantic models
+│   │   ├── services/         # YOLO, Tracking, OpenCV workers
+│   │   └── main.py           # Application entry point
+│   └── requirements.txt      # Python dependencies
+│
+└── mobile-app/               # Flutter Frontend
+    ├── android/              # Native Android config & Keystore
+    ├── ios/                  # Native iOS config
+    ├── lib/
+    │   ├── core/             # Environment configs & themes
+    │   ├── models/           # Data models
+    │   ├── providers/        # State management (Riverpod)
+    │   ├── screens/          # UI Views
+    │   └── services/         # API & WebSocket clients
+    └── pubspec.yaml          # Flutter dependencies
 ```
+
+---
+
+## 🔌 API Features
+
+The backend exposes a rich set of REST and WebSocket APIs:
+- **`GET /cameras`**: Retrieve all registered cameras.
+- **`POST /cameras`**: Register a new IP/RTSP camera.
+- **`GET /analytics/dashboard`**: Fetch aggregated traffic metrics (today, this week, total).
+- **`WS /ws/live`**: Global WebSocket for live dashboard metric updates.
+- **`WS /ws/video/{camera_id}`**: High-performance binary WebSocket streaming real-time JPEG frames and YOLO metadata.
+
+---
+
+## 🚀 Installation
+
+### 1. Backend Setup (Python)
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # Or `venv\Scripts\activate` on Windows
+pip install -r requirements.txt
+```
+
+### 2. Environment Variables
+Create a `.env` file in the `backend/` directory:
+```env
+MONGODB_URL=mongodb+srv://<user>:<password>@cluster.mongodb.net
+FIREBASE_CREDENTIALS_JSON={"type": "service_account", ...}
+```
+
+### 3. Running Locally
+Start the FastAPI server:
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+API Documentation will be available at `http://localhost:8000/docs`.
+
+### 4. Flutter Setup
+```bash
+cd mobile-app
+flutter pub get
+flutter run
+```
+
+---
+
+## ☁️ Deployment
+
+The backend is fully configured for continuous deployment on **Render**. 
+1. Connect your GitHub repository to a new Render Web Service.
+2. Set the build command to `pip install -r requirements.txt`.
+3. Set the start command to `uvicorn app.main:app --host 0.0.0.0 --port 10000`.
+4. Inject your `FIREBASE_CREDENTIALS_JSON` and `MONGODB_URL` in the Render Environment Variables tab.
+
+---
+
+## 📱 Screenshots
+
+<div align="center">
+  <img src="https://via.placeholder.com/250x500.png?text=Login+Screen" width="200"/>
+  <img src="https://via.placeholder.com/250x500.png?text=Dashboard" width="200"/>
+  <img src="https://via.placeholder.com/250x500.png?text=Camera+Management" width="200"/>
+  <br/>
+  <img src="https://via.placeholder.com/250x500.png?text=Live+Monitoring" width="200"/>
+  <img src="https://via.placeholder.com/250x500.png?text=Analytics" width="200"/>
+  <img src="https://via.placeholder.com/250x500.png?text=Notifications" width="200"/>
+</div>
+
+---
+
+## 🎥 Demo
+
+*[Insert Link to YouTube / Loom Demo Video Here]*
+
+---
+
+## 📦 APK Installation
+
+A signed production release of the Android application is available. 
+
+1. Download the `app-release.apk` from the [Releases](https://github.com/hemanthkumar-del/FootFalls-Analytics/releases) page.
+2. Transfer the APK to your Android device.
+3. Open the file and follow the system prompts to install (you may need to allow installation from unknown sources).
+4. The app will automatically connect to the deployed production backend.
 
 ---
 
 ## 🔮 Future Improvements
 
-- [ ] Multi-camera support
-- [ ] Heatmap Analytics
-- [ ] Face Recognition
-- [ ] Push Notifications
-- [ ] Offline Sync
-- [ ] Admin Web Dashboard
-- [ ] AI Prediction Models
+- **Multi-camera Support**: Stitching and tracking a single ID across multiple overlapping camera FOVs.
+- **Heatmaps**: Visualizing customer dwell times and popular store aisles.
+- **AI Forecasting**: Time-series prediction for predicting future store traffic based on historical data.
+- **Cloud Recording**: Trigger-based saving of specific security events to cloud storage.
+- **Admin Web Dashboard**: A React/Next.js companion web portal for enterprise managers.
 
 ---
 
 ## 👨‍💻 Author
 
 **Hemanth Kumar Kodi**
+
 - GitHub: [@hemanthkumar-del](https://github.com/hemanthkumar-del)
 - LinkedIn: [Hemanth Kodi](https://www.linkedin.com/in/hemanth-kodi-253351328)
 
 ---
-
-## 📄 License
-
-This project is licensed under the **MIT License**. See the `LICENSE` file for more details.
-
----
-
-> If you like this project, consider giving it a ⭐ on GitHub.
+<div align="center">
+  <i>If you find this project interesting, please consider giving it a ⭐!</i>
+</div>
