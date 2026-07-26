@@ -40,6 +40,20 @@ Whether you are optimizing store layouts, scheduling staff based on peak hours, 
 
 ---
 
+## 📱 Application Screenshots
+
+| Login | Dashboard |
+| :---: | :---: |
+| ![Login](screenshots/login.svg) | ![Dashboard](screenshots/dashboard.svg) |
+| **Camera Management** | **Live Monitoring** |
+| ![Camera Management](screenshots/camera_management.svg) | ![Live Monitoring](screenshots/live_monitoring.svg) |
+| **Analytics** | **Notifications** |
+| ![Analytics](screenshots/analytics.svg) | ![Notifications](screenshots/notifications.svg) |
+| **Reports** | **Store Profile** |
+| ![Reports](screenshots/reports.svg) | ![Store Profile](screenshots/store_profile.svg) |
+
+---
+
 ## 🛠️ Tech Stack
 
 | Category | Technology |
