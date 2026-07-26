@@ -56,9 +56,10 @@ class CameraService:
         self.main_loop = main_loop
         
         self.tracking_service = TrackingService()
-        # Set line Y at 240 (assuming typical 640x480 webcam) - Actually using 640x640 now so 320
-        self.counting_service = CountingService(line_y=320, deadzone=20)
+        # Set line Y for counting
+        self.counting_service = CountingService(line_y=450, deadzone=20)
         self.analytics_service = AnalyticsService()
+        self.frame_count = 0
         
         self.thread = None
 
@@ -135,6 +136,11 @@ class CameraService:
             # 3. Handle Events and Broadcasting
             boxes_meta = []
             total_conf = 0.0
+            avg_conf = 0.0
+
+            # Draw counting line (red)
+            cv2.line(frame, (0, 450), (640, 450), (0, 0, 255), 2)
+            cv2.putText(frame, "COUNT LINE", (10, 440), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
             for obj in tracked_objects:
                 track_id = obj["id"]
@@ -143,8 +149,23 @@ class CameraService:
                 cls_name = obj.get("class", "person")
                 total_conf += conf
                 
+                logger.debug(f"[CAM_ID: {self.camera_id}] Tracked Object {track_id}: {bbox}")
+                
                 if bbox:
                     x1, y1, x2, y2 = map(int, bbox)
+                    
+                    # Draw bounding box (green)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    
+                    # Draw track ID, class, and confidence (green)
+                    label = f"{cls_name.capitalize()} {track_id} {conf:.2f}"
+                    cv2.putText(frame, label, (x1, max(0, y1 - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    
+                    # Draw centroid (blue)
+                    cx = int((x1 + x2) / 2)
+                    cy = int((y1 + y2) / 2)
+                    cv2.circle(frame, (cx, cy), 5, (255, 0, 0), -1)
+
                     boxes_meta.append({
                         "id": track_id,
                         "x1": x1, "y1": y1, "x2": x2, "y2": y2,
@@ -162,7 +183,19 @@ class CameraService:
                             self.main_loop
                         )
 
-            avg_conf = total_conf / max(len(tracked_objects), 1)
+            avg_conf = (
+                total_conf / len(tracked_objects)
+                if tracked_objects
+                else 0.0
+            )
+
+            self.frame_count += 1
+            if self.frame_count % 150 == 0:
+                logger.info(f"[CAM_ID: {self.camera_id}] FPS: {fps:.1f} | Detections: {len(tracked_objects)} | Occupancy: {self.counting_service.occupancy} | Entries: {self.analytics_service.total_entries + new_entries} | Exits: {self.analytics_service.total_exits + new_exits}")
+
+            # Draw stats on frame
+            stats_text = f"FPS: {fps:.1f} | Occ: {self.counting_service.occupancy} | In: {self.analytics_service.total_entries + new_entries} | Out: {self.analytics_service.total_exits + new_exits}"
+            cv2.putText(frame, stats_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
             # 4. Stream video & metadata over dedicated websocket
             metadata = {
@@ -178,7 +211,7 @@ class CameraService:
             }
 
             # Encode frame to JPEG
-            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 85]
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 65]
             _, buffer = cv2.imencode('.jpg', frame, encode_param)
             jpeg_bytes = buffer.tobytes()
 

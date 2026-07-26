@@ -1,10 +1,18 @@
 class CountingService:
     def __init__(self, line_y: int = 300, deadzone: int = 20):
         self.line_y = line_y
-        self.deadzone = deadzone  # Hysteresis to prevent bouncing
-        
-        # Track history: { track_id: {"last_y": int, "crossed": bool, "direction": str} }
+        self.deadzone = deadzone
+
+        # Track history:
+        # {
+        #   track_id: {
+        #       "last_y": float,
+        #       "crossed": bool,
+        #       "direction": str | None
+        #   }
+        # }
         self.track_history = {}
+
         self.entries = 0
         self.exits = 0
         self.occupancy = 0
@@ -16,40 +24,79 @@ class CountingService:
 
         for obj in tracked_objects:
             track_id = obj["id"]
-            cx, cy = obj["centroid"]
+            _, cy = obj["centroid"]
             current_ids.add(track_id)
 
+            # First time seeing this person
             if track_id not in self.track_history:
-                self.track_history[track_id] = {"last_y": cy, "crossed": False, "direction": None}
+                self.track_history[track_id] = {
+                    "last_y": cy,
+                    "crossed": False,
+                    "direction": None,
+                }
+                print(f"[NEW TRACK] ID={track_id} | y={cy:.2f}")
                 continue
 
             history = self.track_history[track_id]
             prev_y = history["last_y"]
 
-            # Only count if it hasn't crossed yet
-            if not history["crossed"]:
-                # Entry: Moving downwards (y increases) across the line + deadzone
-                if prev_y < (self.line_y - self.deadzone) and cy > (self.line_y + self.deadzone):
-                    new_entries += 1
-                    self.entries += 1
-                    self.occupancy += 1
-                    history["crossed"] = True
-                    history["direction"] = "entry"
-                
-                # Exit: Moving upwards (y decreases) across the line - deadzone
-                elif prev_y > (self.line_y + self.deadzone) and cy < (self.line_y - self.deadzone):
-                    new_exits += 1
-                    self.exits += 1
-                    self.occupancy = max(0, self.occupancy - 1)
-                    history["crossed"] = True
-                    history["direction"] = "exit"
+            # Determine which side of the counting line
+            prev_side = prev_y < self.line_y
+            curr_side = cy < self.line_y
 
-            # Update last_y for the next frame calculation
+            # Debug every frame
+            print(
+                f"[TRACK] ID={track_id} | "
+                f"PrevY={prev_y:.2f} | CurrY={cy:.2f} | "
+                f"PrevSide={'TOP' if prev_side else 'BOTTOM'} | "
+                f"CurrSide={'TOP' if curr_side else 'BOTTOM'}"
+            )
+
+            # Crossing detected
+            if prev_side != curr_side:
+
+                print(f"***** CROSSING DETECTED for ID={track_id} *****")
+
+                if not history["crossed"]:
+
+                    # Moving downward
+                    if cy > prev_y:
+                        new_entries += 1
+                        self.entries += 1
+                        self.occupancy += 1
+
+                        history["direction"] = "entry"
+                        history["crossed"] = True
+
+                        print(
+                            f"✅ ENTRY | "
+                            f"Entries={self.entries} | "
+                            f"Occupancy={self.occupancy}"
+                        )
+
+                    # Moving upward
+                    else:
+                        new_exits += 1
+                        self.exits += 1
+                        self.occupancy = max(0, self.occupancy - 1)
+
+                        history["direction"] = "exit"
+                        history["crossed"] = True
+
+                        print(
+                            f"⬆ EXIT | "
+                            f"Exits={self.exits} | "
+                            f"Occupancy={self.occupancy}"
+                        )
+
+            # Update last position
             history["last_y"] = cy
 
-        # Memory cleanup for lost tracks
+        # Cleanup disappeared tracks
         stale_ids = set(self.track_history.keys()) - current_ids
+
         for stale_id in stale_ids:
+            print(f"[REMOVE TRACK] ID={stale_id}")
             del self.track_history[stale_id]
 
         return new_entries, new_exits
