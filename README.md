@@ -44,13 +44,17 @@ Whether you are optimizing store layouts, scheduling staff based on peak hours, 
 
 | Login | Dashboard |
 | :---: | :---: |
-| ![Login](screenshots/login.svg) | ![Dashboard](screenshots/dashboard.svg) |
+| ![Login](screenshots/login.png) | ![Dashboard](screenshots/dashboard.png) |
 | **Camera Management** | **Live Monitoring** |
-| ![Camera Management](screenshots/camera_management.svg) | ![Live Monitoring](screenshots/live_monitoring.svg) |
-| **Analytics** | **Notifications** |
-| ![Analytics](screenshots/analytics.svg) | ![Notifications](screenshots/notifications.svg) |
-| **Reports** | **Store Profile** |
-| ![Reports](screenshots/reports.svg) | ![Store Profile](screenshots/store_profile.svg) |
+| ![Camera Management](screenshots/camera_management.png) | ![Live Monitoring](screenshots/live_monitoring.png) |
+| **AI Insights** | **Heatmaps** |
+| ![AI Insights](screenshots/ai_insights.png) | ![Heatmaps](screenshots/heatmaps.png) |
+| **Trends** | **Export Reports** |
+| ![Trends](screenshots/trends.png) | ![Export Reports](screenshots/export_reports.png) |
+| **Notifications** | **Reports** |
+| ![Notifications](screenshots/notifications.png) | ![Reports](screenshots/reports.png) |
+| **Store Profile** | |
+| ![Store Profile](screenshots/store_profile.png) | |
 
 ---
 
