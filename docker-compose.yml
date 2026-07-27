@@ -43,6 +43,9 @@ services:
       - DB_NAME=footfalls_db
       - CORS_ORIGINS=*
       - PORT=8000
+      - GOOGLE_APPLICATION_CREDENTIALS=/secrets/firebase.json
+    volumes:
+      - "C:/Users/DELL/Downloads/footfalls-6dab0-firebase-adminsdk-fbsvc-f02072051e.json:/secrets/firebase.json:ro"
     networks:
       - footfalls_net
     depends_on:
