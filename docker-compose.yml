@@ -1,23 +1,15 @@
 version: '3.8'
 
-services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: footfalls_backend
-    ports:
-      - "8000:8000"
-    environment:
-      - ENVIRONMENT=development
-      - MONGO_URI=mongodb://mongodb:27017
-      - DB_NAME=footfalls_db
-      - CORS_ORIGINS=*
-      # Inject FIREBASE_PROJECT_ID via your host shell or local .env
-    depends_on:
-      - mongodb
-    restart: unless-stopped
+networks:
+  footfalls_net:
+    driver: bridge
+    name: footfalls_network
 
+volumes:
+  mongo_data:
+    name: footfalls_mongo_data
+
+services:
   mongodb:
     image: mongo:6.0
     container_name: footfalls_mongo
@@ -25,7 +17,41 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    networks:
+      - footfalls_net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
-volumes:
-  mongo_data:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: footfalls_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      # These can be overridden in the .env file, but these are solid defaults for Docker
+      - ENVIRONMENT=development
+      - MONGO_URI=mongodb://mongodb:27017
+      - DB_NAME=footfalls_db
+      - CORS_ORIGINS=*
+      - PORT=8000
+    networks:
+      - footfalls_net
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s

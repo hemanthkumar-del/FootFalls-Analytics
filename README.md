@@ -223,6 +223,49 @@ A signed production release of the Android application is available.
 
 ---
 
+## 🐳 Docker Setup
+
+FootFalls Analytics is fully containerized for enterprise deployments.
+
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+- Docker Compose (included with Docker Desktop).
+
+### 1. Configuration
+First, copy the example environment file and configure it:
+```bash
+cp backend/.env.example backend/.env
+```
+Ensure your `FIREBASE_PROJECT_ID` and other necessary variables are set.
+
+### 2. Build and Run
+Start the entire stack (FastAPI Backend + MongoDB) in detached mode:
+```bash
+docker compose up -d --build
+```
+Docker Compose will build the backend multi-stage image (caching python dependencies efficiently) and start MongoDB. The backend will wait until MongoDB is healthy before fully starting.
+
+### 3. Check Logs
+To view the logs of the backend:
+```bash
+docker compose logs -f backend
+```
+
+### 4. Stop Services
+To stop the containers without destroying the MongoDB persistent volume:
+```bash
+docker compose down
+```
+
+### 5. Troubleshooting
+If the YOLOv8 model fails to download due to network issues, ensure your container has outbound internet access.
+If you need to rebuild without using cache:
+```bash
+docker compose build --no-cache
+```
+
+---
+
 ## 👨‍💻 Author
 
 **Hemanth Kumar Kodi**

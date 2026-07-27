@@ -1,40 +1,48 @@
-# Multi-stage Dockerfile for FastAPI + OpenCV
-# Stage 1: Build dependencies
+# Stage 1: Build dependencies in a virtual environment
 FROM python:3.11-slim as builder
 
 WORKDIR /app
+
+# Install system dependencies required for building some python packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 COPY requirements.txt .
 
-# Install build dependencies if needed (none strictly required for binary wheels, but good practice)
-RUN pip install --user \
-    --default-timeout=300 \
-    --retries=10 \
-    --no-cache-dir \
-    -r requirements.txt
+# Install Python dependencies, caching pip for efficiency
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Stage 2: Production Image
 FROM python:3.11-slim
 
-# Install OpenCV headless dependencies and curl for HEALTHCHECK
+# Install OpenCV system dependencies and curl for HEALTHCHECK
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
+    libsm6 \
+    libxext6 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
-RUN useradd -m appuser
+RUN useradd -m -s /bin/bash appuser
+
 WORKDIR /home/appuser/app
 
-# Copy installed python packages from builder
-COPY --from=builder /root/.local /home/appuser/.local
-ENV PATH=/home/appuser/.local/bin:$PATH
+# Copy the virtual environment from the builder stage
+COPY --from=builder --chown=appuser:appuser /opt/venv /opt/venv
+
+# Ensure the virtual environment is in the PATH
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy application source code
-COPY . .
+COPY --chown=appuser:appuser . .
 
-# Ensure appuser owns the directory
-RUN chown -R appuser:appuser /home/appuser/app
 USER appuser
 
 # Expose FastAPI port
