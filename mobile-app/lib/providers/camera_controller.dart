@@ -61,6 +61,33 @@ class CameraController extends StateNotifier<CameraState> {
     }
   }
 
+  Future<void> updateCamera(String id, String name, String url) async {
+    try {
+      await _repository.updateCamera(id, name, url);
+      await fetchCameras();
+    } catch (e) {
+      if (mounted) state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> enableCamera(String id) async {
+    try {
+      await _repository.enableCamera(id);
+      await fetchCameras();
+    } catch (e) {
+      if (mounted) state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> disableCamera(String id) async {
+    try {
+      await _repository.disableCamera(id);
+      await fetchCameras();
+    } catch (e) {
+      if (mounted) state = state.copyWith(error: e.toString());
+    }
+  }
+
   Future<void> deleteCamera(String id) async {
     try {
       await _repository.deleteCamera(id);

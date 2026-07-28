@@ -22,8 +22,8 @@ class ProfileState {
   }
 
   // Getters for Retail Analytics
-  String get storeName => userData?['storeName'] ?? 'Unknown Store';
-  String get storeAddress => userData?['storeAddress'] ?? 'No address';
+  String get storeName => userData?['store_name'] ?? userData?['storeName'] ?? 'Unknown Store';
+  String get storeAddress => userData?['address'] ?? userData?['storeAddress'] ?? 'No address';
   int get camerasInstalled => userData?['camerasInstalled'] ?? 0;
   int get todayVisitors => userData?['todayVisitors'] ?? 0;
   int get weeklyVisitors => userData?['weeklyVisitors'] ?? 0;

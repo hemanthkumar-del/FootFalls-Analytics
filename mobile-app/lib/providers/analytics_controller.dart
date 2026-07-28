@@ -1,12 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:footfalls_app/core/network/dio_client.dart';
-import 'package:dio/dio.dart';
+import 'package:footfalls_app/repositories/analytics_repository.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
 final analyticsControllerProvider = StateNotifierProvider.autoDispose<AnalyticsController, AnalyticsState>((ref) {
-  final dio = ref.watch(dioProvider);
-  return AnalyticsController(dio);
+  return AnalyticsController(ref.watch(analyticsRepositoryProvider));
 });
 
 class AnalyticsState {
@@ -42,49 +40,54 @@ class AnalyticsState {
 }
 
 class AnalyticsController extends StateNotifier<AnalyticsState> {
-  final Dio _dio;
+  final AnalyticsRepository _repository;
 
-  AnalyticsController(this._dio) : super(AnalyticsState()) {
+  AnalyticsController(this._repository) : super(AnalyticsState()) {
     fetchData();
   }
 
   Future<void> fetchData() async {
+    if (!mounted) return;
     state = state.copyWith(isLoading: true, error: null);
     try {
       final responses = await Future.wait([
-        _dio.get('/analytics/advanced'),
-        _dio.get('/analytics/heatmap'),
+        _repository.getAdvancedAnalytics(),
+        _repository.getHeatmapData(),
       ]);
       
-      state = state.copyWith(
-        isLoading: false,
-        advancedData: responses[0].data,
-        heatmapData: responses[1].data,
-      );
+      if (mounted) {
+        state = state.copyWith(
+          isLoading: false,
+          advancedData: responses[0],
+          heatmapData: responses[1],
+        );
+      }
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      if (mounted) {
+        state = state.copyWith(
+          isLoading: false,
+          error: e.toString(),
+        );
+      }
     }
   }
 
   Future<String?> exportReport(String type) async {
+    if (!mounted) return null;
     state = state.copyWith(isExporting: true, error: null);
     try {
-      final response = await _dio.get(
-        '/analytics/export/$type',
-        options: Options(responseType: ResponseType.bytes),
-      );
+      final response = await _repository.downloadReport(type);
       
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/footfalls_report.$type');
-      await file.writeAsBytes(response.data);
+      if (response.data != null) {
+        await file.writeAsBytes(response.data!);
+      }
       
-      state = state.copyWith(isExporting: false);
+      if (mounted) state = state.copyWith(isExporting: false);
       return file.path;
     } catch (e) {
-      state = state.copyWith(isExporting: false, error: e.toString());
+      if (mounted) state = state.copyWith(isExporting: false, error: e.toString());
       return null;
     }
   }

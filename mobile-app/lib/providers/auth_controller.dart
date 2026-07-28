@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:footfalls_app/providers/auth_state.dart';
 import 'package:footfalls_app/services/auth_service.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:footfalls_app/core/constants/app_constants.dart';
 
 final StateNotifierProvider<AuthController, AuthState> authProvider = StateNotifierProvider<AuthController, AuthState>((ref) {
   return AuthController(ref.read(authServiceProvider));
@@ -26,9 +28,19 @@ class AuthController extends StateNotifier<AuthState> {
     _authService.repository.authStateChanges.listen((user) async {
       if (user != null) {
         await _authService.cacheUser(user);
+        
+        // Also get the Firebase token and save it to Secure Storage for Dio requests
+        final token = await _authService.repository.getIdToken();
+        if (token != null) {
+          const storage = FlutterSecureStorage();
+          await storage.write(key: AppConstants.jwtKey, value: token);
+        }
+        
         state = state.copyWith(status: AuthStatus.authenticated, user: user, errorMessage: null);
       } else {
         await _authService.clearCache();
+        const storage = FlutterSecureStorage();
+        await storage.delete(key: AppConstants.jwtKey);
         state = state.copyWith(status: AuthStatus.unauthenticated, user: null);
       }
     });

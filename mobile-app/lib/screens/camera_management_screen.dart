@@ -1,63 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:footfalls_app/core/network/dio_client.dart';
-import 'package:dio/dio.dart';
-
-final cameraListProvider = StateNotifierProvider.autoDispose<CameraController, List<Map<String, dynamic>>>((ref) {
-  return CameraController(ref.watch(dioProvider));
-});
-
-class CameraController extends StateNotifier<List<Map<String, dynamic>>> {
-  final Dio _dio;
-
-  CameraController(this._dio) : super([]) {
-    fetchCameras();
-  }
-
-  Future<void> fetchCameras() async {
-    try {
-      final res = await _dio.get('/cameras/status');
-      state = List<Map<String, dynamic>>.from(res.data);
-    } catch (e) {
-      // Handle error
-    }
-  }
-
-  Future<void> toggleCamera(String id, bool enable) async {
-    try {
-      await _dio.patch('/cameras/$id/${enable ? "enable" : "disable"}');
-      await fetchCameras();
-    } catch (e) {
-      // error
-    }
-  }
-
-  Future<void> deleteCamera(String id) async {
-    try {
-      await _dio.delete('/cameras/$id');
-      await fetchCameras();
-    } catch (e) {
-      // error
-    }
-  }
-  
-  Future<void> addCamera(String name, String url) async {
-    try {
-      await _dio.post('/cameras/', data: {"name": name, "url": url});
-      await fetchCameras();
-    } catch (e) {
-      // error
-    }
-  }
-}
+import 'package:footfalls_app/providers/camera_controller.dart';
+import 'package:footfalls_app/models/camera_model.dart';
+import 'package:shimmer/shimmer.dart';
 
 class CameraManagementScreen extends ConsumerWidget {
   const CameraManagementScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cameras = ref.watch(cameraListProvider);
-    final controller = ref.read(cameraListProvider.notifier);
+    final cameraState = ref.watch(cameraControllerProvider);
+    final controller = ref.read(cameraControllerProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
@@ -71,48 +24,108 @@ class CameraManagementScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: controller.fetchCameras,
-        child: cameras.isEmpty 
-          ? const Center(child: Text("No cameras configured.")) 
-          : ListView.builder(
-          itemCount: cameras.length,
-          itemBuilder: (context, index) {
-            final cam = cameras[index];
-            final isEnabled = cam['isEnabled'] == true;
-            final isRunning = cam['is_running_in_memory'] == true;
-            
-            return Dismissible(
-              key: Key(cam['id']),
-              direction: DismissDirection.endToStart,
-              background: Container(
-                color: Colors.red,
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 20),
-                child: const Icon(Icons.delete, color: Colors.white),
-              ),
-              onDismissed: (dir) => controller.deleteCamera(cam['id']),
-              child: Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: isRunning ? Colors.green : (isEnabled ? Colors.orange : Colors.grey),
-                    child: Icon(isRunning ? Icons.videocam : Icons.videocam_off, color: Colors.white),
-                  ),
-                  title: Text(cam['name']),
-                  subtitle: Text('FPS: ${cam['fps'].toStringAsFixed(1)} • Status: ${isRunning ? "Online" : "Offline"}'),
-                  trailing: Switch(
-                    value: isEnabled,
-                    onChanged: (val) => controller.toggleCamera(cam['id'], val),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
+        child: _buildBody(cameraState, controller),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddDialog(context, controller),
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  Widget _buildBody(CameraState state, CameraController controller) {
+    if (state.isLoading && state.cameras.isEmpty) {
+      return ListView.builder(
+        itemCount: 5,
+        itemBuilder: (context, index) => Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ListTile(
+              leading: const CircleAvatar(backgroundColor: Colors.white),
+              title: Container(color: Colors.white, height: 16, width: double.infinity),
+              subtitle: Container(color: Colors.white, height: 12, width: 100),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (state.error != null && state.cameras.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(state.error!),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => controller.fetchCameras(),
+              child: const Text('Retry'),
+            )
+          ],
+        ),
+      );
+    }
+
+    if (state.cameras.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.videocam_off, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text('No cameras configured.', style: TextStyle(fontSize: 18, color: Colors.grey)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => controller.fetchCameras(),
+              child: const Text('Refresh'),
+            )
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: state.cameras.length,
+      itemBuilder: (context, index) {
+        final CameraModel cam = state.cameras[index];
+        
+        return Dismissible(
+          key: Key(cam.id),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            color: Colors.red,
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            child: const Icon(Icons.delete, color: Colors.white),
+          ),
+          onDismissed: (dir) => controller.deleteCamera(cam.id),
+          child: Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: cam.isRunningInMemory ? Colors.green : (cam.isEnabled ? Colors.orange : Colors.grey),
+                child: Icon(cam.isRunningInMemory ? Icons.videocam : Icons.videocam_off, color: Colors.white),
+              ),
+              title: Text(cam.name),
+              subtitle: Text('FPS: ${cam.fps.toStringAsFixed(1)} • Status: ${cam.isRunningInMemory ? "Online" : "Offline"}'),
+              trailing: Switch(
+                value: cam.isEnabled,
+                onChanged: (val) {
+                  if (val) {
+                    controller.enableCamera(cam.id);
+                  } else {
+                    controller.disableCamera(cam.id);
+                  }
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

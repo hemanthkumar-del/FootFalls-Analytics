@@ -1,14 +1,11 @@
-import 'package:flutter/foundation.dart';
-
 class BackendConfig {
-  static const String _productionUrl = 'https://footfalls-analytics.onrender.com';
-  static const String _localUrl = 'http://10.0.2.2:8000';
+  static const String _awsUrl = 'http://13.203.195.62:8000';
   
   static String get restApiUrl {
     const definedUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
     if (definedUrl.isNotEmpty) return definedUrl;
     
-    return kReleaseMode ? _productionUrl : _localUrl;
+    return _awsUrl;
   }
   
   static String get webSocketUrl {

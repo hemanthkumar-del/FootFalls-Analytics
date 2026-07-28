@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:footfalls_app/providers/analytics_controller.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ReportsScreen extends ConsumerWidget {
   const ReportsScreen({super.key});
@@ -27,20 +28,64 @@ class ReportsScreen extends ConsumerWidget {
           ),
         ),
         body: state.isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? _buildShimmerLoading()
             : state.error != null
-                ? Center(child: Text('Error: ${state.error}'))
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text('Failed to load data: ${state.error}'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => controller.fetchData(),
+                          child: const Text('Retry'),
+                        )
+                      ],
+                    ),
+                  )
                 : state.advancedData == null
                     ? const Center(child: Text('No data available'))
                     : TabBarView(
                         children: [
                           _buildTrendsTab(state.advancedData!),
                           _buildInsightsTab(state.advancedData!),
-                          _buildHeatmapTab(state.heatmapData!),
+                          _buildHeatmapTab(state.heatmapData ?? {}),
                           _buildExportTab(context, state, controller),
                         ],
                       ),
       ),
+    );
+  }
+
+  Widget _buildShimmerLoading() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(color: Colors.white, height: 24, width: 150),
+              const SizedBox(height: 16),
+              Container(
+                height: 250,
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              ),
+              const SizedBox(height: 32),
+              Container(color: Colors.white, height: 24, width: 200),
+              const SizedBox(height: 16),
+              Container(
+                height: 250,
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

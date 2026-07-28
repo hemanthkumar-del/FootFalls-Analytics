@@ -71,6 +71,10 @@ class AuthRepository {
     return _mapFirebaseUser(_firebaseAuth.currentUser);
   }
 
+  Future<String?> getIdToken() async {
+    return await _firebaseAuth.currentUser?.getIdToken();
+  }
+
   Stream<UserModel?> get authStateChanges {
     return _firebaseAuth.authStateChanges().map(_mapFirebaseUser);
   }

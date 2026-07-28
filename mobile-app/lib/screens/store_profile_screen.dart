@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:footfalls_app/core/network/dio_client.dart';
 import 'package:dio/dio.dart';
 
+import 'package:footfalls_app/core/config/api_constants.dart';
+
 final storeProfileProvider = StateNotifierProvider.autoDispose<StoreProfileController, Map<String, dynamic>?>((ref) {
   return StoreProfileController(ref.watch(dioProvider));
 });
@@ -16,7 +18,7 @@ class StoreProfileController extends StateNotifier<Map<String, dynamic>?> {
 
   Future<void> _fetchProfile() async {
     try {
-      final res = await _dio.get('/store/profile');
+      final res = await _dio.get(ApiConstants.storeProfile);
       state = res.data;
     } catch (e) {
       // Handle error
@@ -25,7 +27,7 @@ class StoreProfileController extends StateNotifier<Map<String, dynamic>?> {
 
   Future<bool> updateProfile(Map<String, dynamic> updateData) async {
     try {
-      final res = await _dio.put('/store/profile', data: updateData);
+      final res = await _dio.put(ApiConstants.storeProfile, data: updateData);
       state = res.data;
       return true;
     } catch (e) {

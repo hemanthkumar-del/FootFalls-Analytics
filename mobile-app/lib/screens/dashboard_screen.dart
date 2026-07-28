@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:footfalls_app/providers/auth_controller.dart';
 import 'package:footfalls_app/providers/profile_controller.dart';
 import 'package:footfalls_app/providers/dashboard_controller.dart';
+import 'package:shimmer/shimmer.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -37,10 +38,24 @@ class DashboardScreen extends ConsumerWidget {
           )
         ],
       ),
-      body: dashboardState.isLoading 
-          ? const Center(child: CircularProgressIndicator())
+      body: dashboardState.isLoading && dashboardState.metrics.currentOccupancy == 0
+          ? _buildShimmerLoading()
           : dashboardState.error != null
-              ? Center(child: Text('Failed to load data: ${dashboardState.error}'))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text('Failed to load data: ${dashboardState.error}'),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => ref.read(dashboardControllerProvider.notifier).fetchInitialData(),
+                        child: const Text('Retry'),
+                      )
+                    ],
+                  ),
+                )
               : RefreshIndicator(
                   onRefresh: () async {
                     await ref.read(dashboardControllerProvider.notifier).fetchInitialData();
@@ -171,6 +186,46 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildShimmerLoading() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(color: Colors.white, height: 28, width: 200),
+              const SizedBox(height: 16),
+              Container(
+                height: 200,
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: Container(color: Colors.white, height: 100)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Container(color: Colors.white, height: 100)),
+                ],
+              ),
+              const SizedBox(height: 20),
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                children: List.generate(4, (index) => Container(color: Colors.white, height: 120)),
+              )
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
