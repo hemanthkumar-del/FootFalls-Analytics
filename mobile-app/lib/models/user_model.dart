@@ -13,6 +13,22 @@ class UserModel {
     this.role = 'User',
   });
 
+  UserModel copyWith({
+    String? id,
+    String? email,
+    String? displayName,
+    String? photoUrl,
+    String? role,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      displayName: displayName ?? this.displayName,
+      photoUrl: photoUrl ?? this.photoUrl,
+      role: role ?? this.role,
+    );
+  }
+
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] ?? '',

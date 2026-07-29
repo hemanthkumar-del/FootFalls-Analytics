@@ -113,4 +113,16 @@ class AuthController extends StateNotifier<AuthState> {
       state = state.copyWith(status: AuthStatus.authenticated, errorMessage: e.toString());
     }
   }
+
+  Future<void> updateLocalUserProfile({String? displayName, String? photoUrl}) async {
+    final currentUser = state.user;
+    if (currentUser != null) {
+      final updatedUser = currentUser.copyWith(
+        displayName: displayName,
+        photoUrl: photoUrl, // Pass null explicitly if you want it to be null? Wait, copyWith uses `photoUrl ?? this.photoUrl`. If we passed null, it won't clear. That is correct for this usecase, since photoUrl is null when not changing image.
+      );
+      await _authService.cacheUser(updatedUser);
+      state = state.copyWith(user: updatedUser);
+    }
+  }
 }
