@@ -11,6 +11,8 @@ class LiveCameraState {
   final bool isStreamingFrames;
   final List<DetectionResult> detections;
   final Size frameSize;
+  final double fps;
+  final int inferenceTime;
 
   const LiveCameraState({
     this.isInitialized = false,
@@ -21,6 +23,8 @@ class LiveCameraState {
     this.isStreamingFrames = false,
     this.detections = const [],
     this.frameSize = Size.zero,
+    this.fps = 0.0,
+    this.inferenceTime = 0,
   });
 
   LiveCameraState copyWith({
@@ -32,6 +36,8 @@ class LiveCameraState {
     bool? isStreamingFrames,
     List<DetectionResult>? detections,
     Size? frameSize,
+    double? fps,
+    int? inferenceTime,
   }) {
     return LiveCameraState(
       isInitialized: isInitialized ?? this.isInitialized,
@@ -42,6 +48,8 @@ class LiveCameraState {
       isStreamingFrames: isStreamingFrames ?? this.isStreamingFrames,
       detections: detections ?? this.detections,
       frameSize: frameSize ?? this.frameSize,
+      fps: fps ?? this.fps,
+      inferenceTime: inferenceTime ?? this.inferenceTime,
     );
   }
 }

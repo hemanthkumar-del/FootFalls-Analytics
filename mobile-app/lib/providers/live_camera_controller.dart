@@ -5,17 +5,22 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:footfalls_app/providers/live_camera_state.dart';
 import 'package:footfalls_app/ai/person_detector.dart';
 import 'package:footfalls_app/camera/camera_frame_converter.dart';
+import 'package:footfalls_app/providers/detection_config_state.dart';
 
 final liveCameraControllerProvider = StateNotifierProvider.autoDispose<LiveCameraController, LiveCameraState>((ref) {
-  return LiveCameraController();
+  return LiveCameraController(ref);
 });
 
 class LiveCameraController extends StateNotifier<LiveCameraState> {
+  final Ref _ref;
   CameraController? _cameraController;
   final PersonDetector _personDetector = PersonDetector();
   bool _isProcessingFrame = false;
+  
+  int _frameCount = 0;
+  DateTime _lastFpsTime = DateTime.now();
 
-  LiveCameraController() : super(const LiveCameraState());
+  LiveCameraController(this._ref) : super(const LiveCameraState());
 
   CameraController? get cameraController => _cameraController;
 
@@ -23,7 +28,6 @@ class LiveCameraController extends StateNotifier<LiveCameraState> {
     try {
       state = state.copyWith(errorMessage: null);
       
-      // Initialize AI Detector
       await _personDetector.initialize();
 
       final status = await Permission.camera.request();
@@ -71,7 +75,6 @@ class LiveCameraController extends StateNotifier<LiveCameraState> {
     await _cameraController!.initialize();
     state = state.copyWith(isInitialized: true);
 
-    // Automatically start processing frames for AI
     startImageStream();
   }
 
@@ -83,18 +86,41 @@ class LiveCameraController extends StateNotifier<LiveCameraState> {
       if (_isProcessingFrame) return;
       _isProcessingFrame = true;
 
+      debugPrint('Frame received: ${image.width}x${image.height}');
+
       try {
-        // 1. Convert frame to float32 tensor
-        final float32List = CameraFrameConverter.convertCameraImageToFloat32(image, image.width, image.height);
+        final float32List = CameraFrameConverter.convertCameraImageToFloat32(image, 640, 640);
         
-        // 2. Run inference
+        final inferenceStart = DateTime.now();
         final detections = await _personDetector.detect(float32List, image.width, image.height);
+        final inferenceTime = DateTime.now().difference(inferenceStart).inMilliseconds;
         
-        // 3. Update state for UI overlay
+        final config = _ref.read(detectionConfigProvider);
+        
+        // Filter detections by ROI
+        final filteredDetections = detections.where((det) {
+          final center = det.boundingBox.center;
+          final normalizedCenter = Offset(center.dx / image.width, center.dy / image.height);
+          return config.roi.contains(normalizedCenter);
+        }).toList();
+
+        _frameCount++;
+        final now = DateTime.now();
+        final diff = now.difference(_lastFpsTime).inMilliseconds;
+        double currentFps = state.fps;
+        
+        if (diff >= 1000) {
+          currentFps = _frameCount / (diff / 1000.0);
+          _frameCount = 0;
+          _lastFpsTime = now;
+        }
+
         if (mounted) {
           state = state.copyWith(
-            detections: detections,
+            detections: filteredDetections,
             frameSize: Size(image.width.toDouble(), image.height.toDouble()),
+            fps: currentFps,
+            inferenceTime: inferenceTime,
           );
         }
       } catch (e) {

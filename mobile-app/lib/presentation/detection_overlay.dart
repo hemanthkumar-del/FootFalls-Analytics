@@ -14,6 +14,8 @@ class DetectionOverlay extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (detections.isEmpty || frameSize.width == 0 || frameSize.height == 0) return;
 
+    debugPrint('Number of boxes rendered: ${detections.length}');
+    
     final double scaleX = size.width / frameSize.width;
     final double scaleY = size.height / frameSize.height;
 

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:footfalls_app/providers/live_camera_controller.dart';
 import 'package:footfalls_app/presentation/detection_overlay.dart';
+import 'package:footfalls_app/presentation/interactive_config_overlay.dart';
+import 'package:footfalls_app/presentation/debug_overlay.dart';
+import 'package:footfalls_app/providers/detection_config_state.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class LiveCameraScreen extends ConsumerStatefulWidget {
@@ -32,11 +35,8 @@ class _LiveCameraScreenState extends ConsumerState<LiveCameraScreen> with Widget
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final cameraController = ref.read(liveCameraControllerProvider.notifier).cameraController;
     
-    // Stop camera when backgrounded, resume when foregrounded
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
-      // The camera plugin often pauses automatically, but if we need to explicitly stop, we could.
     } else if (state == AppLifecycleState.resumed) {
-      // Re-initialize the camera if we return to the app
       if (cameraController != null && cameraController.value.isInitialized) {
         ref.read(liveCameraControllerProvider.notifier).initialize();
       }
@@ -47,6 +47,7 @@ class _LiveCameraScreenState extends ConsumerState<LiveCameraScreen> with Widget
   Widget build(BuildContext context) {
     final state = ref.watch(liveCameraControllerProvider);
     final controller = ref.watch(liveCameraControllerProvider.notifier).cameraController;
+    final configState = ref.watch(detectionConfigProvider);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -56,6 +57,15 @@ class _LiveCameraScreenState extends ConsumerState<LiveCameraScreen> with Widget
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+        actions: [
+          IconButton(
+            icon: Icon(configState.isConfigMode ? Icons.check : Icons.settings),
+            onPressed: () {
+              ref.read(detectionConfigProvider.notifier).toggleConfigMode();
+            },
+            tooltip: 'Configure Line & ROI',
+          )
+        ],
       ),
       extendBodyBehindAppBar: true,
       body: _buildBody(context, state, controller),
@@ -107,7 +117,6 @@ class _LiveCameraScreenState extends ConsumerState<LiveCameraScreen> with Widget
       return const Center(child: CircularProgressIndicator(color: Colors.white));
     }
 
-    // Wrap the preview in a LayoutBuilder to ensure proper aspect ratio or just fill
     return Center(
       child: AspectRatio(
         aspectRatio: 1 / controller.value.aspectRatio,
@@ -125,6 +134,12 @@ class _LiveCameraScreenState extends ConsumerState<LiveCameraScreen> with Widget
                   ),
                 ),
               ),
+              
+            const Positioned.fill(
+              child: InteractiveConfigOverlay(),
+            ),
+            
+            const DebugOverlay(),
           ],
         ),
       ),

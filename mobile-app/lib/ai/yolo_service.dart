@@ -16,9 +16,9 @@ class YoloService {
       final labelsData = await rootBundle.loadString('assets/models/labels.txt');
       _labels = labelsData.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
 
-      // Attempt to load the real TFLite model
       final options = InterpreterOptions()..threads = 4;
       _interpreter = await Interpreter.fromAsset('assets/models/yolov8n_float32.tflite', options: options);
+      debugPrint('Model loaded successfully');
     } catch (e) {
       debugPrint('YoloService: Failed to load real model. Error: $e');
     }
@@ -37,7 +37,10 @@ class YoloService {
     // Reshape input float list into [1, 640, 640, 3] depending on the model expected shape
     var input = inputTensor.reshape([1, inputSize, inputSize, 3]);
 
+    final stopwatch = Stopwatch()..start();
     _interpreter!.run(input, output);
+    stopwatch.stop();
+    debugPrint('Model inference duration: ${stopwatch.elapsedMilliseconds} ms');
 
     return _parseYOLOv8Output(output[0], imageWidth, imageHeight);
   }
@@ -83,7 +86,11 @@ class YoloService {
       }
     }
 
-    return _applyNMS(results);
+    debugPrint('Number of raw detections: ${results.length}');
+    
+    final filtered = _applyNMS(results);
+    debugPrint('Number of \'person\' detections after filtering: ${filtered.length}');
+    return filtered;
   }
 
   List<DetectionResult> _applyNMS(List<DetectionResult> boxes) {
