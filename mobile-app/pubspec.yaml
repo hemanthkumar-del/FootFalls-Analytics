@@ -39,6 +39,10 @@ dependencies:
 
   # Image / Media
   image_picker: ^1.1.2
+  camera: ^0.11.0
+  permission_handler: ^11.3.1
+  tflite_flutter: ^0.11.0
+  image: ^4.1.7
 
   # Utils
   intl: ^0.18.1
@@ -65,3 +69,6 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/models/
