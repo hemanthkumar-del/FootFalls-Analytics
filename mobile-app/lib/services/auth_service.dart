@@ -22,9 +22,14 @@ class AuthService {
   }
 
   Future<UserModel?> getCachedUser() async {
-    final data = await _storage.read(key: _userKey);
-    if (data != null) {
-      return UserModel.fromJson(jsonDecode(data));
+    try {
+      final data = await _storage.read(key: _userKey);
+      if (data != null) {
+        return UserModel.fromJson(jsonDecode(data));
+      }
+    } catch (e) {
+      // Handle BadPaddingException and other corrupted storage states
+      await _storage.deleteAll();
     }
     return null;
   }

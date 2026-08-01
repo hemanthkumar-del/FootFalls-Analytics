@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,7 +6,9 @@ import 'package:footfalls_app/providers/live_camera_controller.dart';
 import 'package:footfalls_app/presentation/detection_overlay.dart';
 import 'package:footfalls_app/presentation/interactive_config_overlay.dart';
 import 'package:footfalls_app/presentation/debug_overlay.dart';
+import 'package:footfalls_app/presentation/developer_debug_panel.dart';
 import 'package:footfalls_app/providers/detection_config_state.dart';
+import 'package:footfalls_app/utils/debug_console.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class LiveCameraScreen extends ConsumerStatefulWidget {
@@ -16,6 +19,8 @@ class LiveCameraScreen extends ConsumerStatefulWidget {
 }
 
 class _LiveCameraScreenState extends ConsumerState<LiveCameraScreen> with WidgetsBindingObserver {
+  Timer? _cameraStateTimer;
+
   @override
   void initState() {
     super.initState();
@@ -23,10 +28,23 @@ class _LiveCameraScreenState extends ConsumerState<LiveCameraScreen> with Widget
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(liveCameraControllerProvider.notifier).initialize();
     });
+    
+    _cameraStateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      final controller = ref.read(liveCameraControllerProvider.notifier).cameraController;
+      if (controller != null) {
+        DebugConsole.addLog(
+          file: 'live_camera_screen', 
+          function: 'Timer', 
+          message: 'Camera State -> isInitialized: ${controller.value.isInitialized}, isStreamingImages: ${controller.value.isStreamingImages}', 
+          color: LogColor.blue
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
+    _cameraStateTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -35,9 +53,18 @@ class _LiveCameraScreenState extends ConsumerState<LiveCameraScreen> with Widget
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final cameraController = ref.read(liveCameraControllerProvider.notifier).cameraController;
     
+    DebugConsole.addLog(
+      file: 'live_camera_screen.dart', 
+      function: 'didChangeAppLifecycleState', 
+      message: 'LIFECYCLE TRANSITION: ${state.name} at ${DateTime.now().toIso8601String()}', 
+      color: LogColor.yellow
+    );
+    
     if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
     } else if (state == AppLifecycleState.resumed) {
       if (cameraController != null && cameraController.value.isInitialized) {
+        // Do not recreate controller if it exists and is initialized.
+      } else {
         ref.read(liveCameraControllerProvider.notifier).initialize();
       }
     }
@@ -70,12 +97,15 @@ class _LiveCameraScreenState extends ConsumerState<LiveCameraScreen> with Widget
       extendBodyBehindAppBar: true,
       body: _buildBody(context, state, controller),
       floatingActionButton: state.isInitialized && state.cameras.length > 1
-          ? FloatingActionButton(
-              onPressed: () {
-                ref.read(liveCameraControllerProvider.notifier).switchCamera();
-              },
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              child: const Icon(Icons.flip_camera_android),
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 40.0), // Lift above debug panel header
+              child: FloatingActionButton(
+                onPressed: () {
+                  ref.read(liveCameraControllerProvider.notifier).switchCamera();
+                },
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                child: const Icon(Icons.flip_camera_android),
+              ),
             )
           : null,
     );
@@ -83,38 +113,48 @@ class _LiveCameraScreenState extends ConsumerState<LiveCameraScreen> with Widget
 
   Widget _buildBody(BuildContext context, state, CameraController? controller) {
     if (state.errorMessage != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.redAccent, size: 60),
-              const SizedBox(height: 16),
-              Text(
-                state.errorMessage!,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
-                textAlign: TextAlign.center,
+      return Stack(
+        children: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.redAccent, size: 60),
+                  const SizedBox(height: 16),
+                  Text(
+                    state.errorMessage!,
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (!state.isPermissionGranted) {
+                        openAppSettings();
+                      } else {
+                        ref.read(liveCameraControllerProvider.notifier).initialize();
+                      }
+                    },
+                    child: Text(!state.isPermissionGranted ? 'Open Settings' : 'Retry'),
+                  )
+                ],
               ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  if (!state.isPermissionGranted) {
-                    openAppSettings();
-                  } else {
-                    ref.read(liveCameraControllerProvider.notifier).initialize();
-                  }
-                },
-                child: Text(!state.isPermissionGranted ? 'Open Settings' : 'Retry'),
-              )
-            ],
+            ),
           ),
-        ),
+          const DeveloperDebugPanel(),
+        ],
       );
     }
 
     if (!state.isInitialized || controller == null) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return const Stack(
+        children: [
+          Center(child: CircularProgressIndicator(color: Colors.white)),
+          DeveloperDebugPanel(),
+        ],
+      );
     }
 
     return Center(
@@ -140,6 +180,8 @@ class _LiveCameraScreenState extends ConsumerState<LiveCameraScreen> with Widget
             ),
             
             const DebugOverlay(),
+            
+            const DeveloperDebugPanel(),
           ],
         ),
       ),
