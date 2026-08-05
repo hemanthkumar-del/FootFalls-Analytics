@@ -1,6 +1,3 @@
-import 'dart:math';
-import 'package:flutter/foundation.dart';
-
 /// A simple matrix class for Kalman Filter operations
 class Mat {
   final int rows;
@@ -101,7 +98,7 @@ class Mat {
       double pivot = a.data[i][i];
       if (pivot.abs() < 1e-9) {
         // Singular matrix, return identity as fallback
-        return Mat.eye(n); 
+        return Mat.eye(n);
       }
 
       // Scale row i
@@ -127,12 +124,12 @@ class Mat {
 /// A standard Kalman Filter for bounding box tracking (ByteTrack / SORT)
 /// State: [cx, cy, aspect_ratio, height, vx, vy, va, vh]
 class KalmanFilter {
-  late Mat _x; // State estimate
-  late Mat _P; // Error covariance
-  late Mat _F; // State transition model
-  late Mat _H; // Observation model
-  late Mat _R; // Observation noise covariance
-  late Mat _Q; // Process noise covariance
+  late Mat _stateEstimate;       // x  — current state vector
+  late Mat _errorCovariance;     // P  — error covariance matrix
+  late Mat _stateTransition;     // F  — state transition model
+  late Mat _observationModel;    // H  — observation model
+  late Mat _observationNoise;    // R  — observation noise covariance
+  late Mat _processNoise;        // Q  — process noise covariance
 
   static const double _stdWeightPosition = 1.0 / 20;
   static const double _stdWeightVelocity = 1.0 / 160;
@@ -140,28 +137,25 @@ class KalmanFilter {
   KalmanFilter() {
     int ndim = 4;
     double dt = 1.0;
-    
-    _F = Mat.eye(8);
+
+    _stateTransition = Mat.eye(8);
     for (int i = 0; i < ndim; i++) {
-      _F.set(i, i + ndim, dt);
+      _stateTransition.set(i, i + ndim, dt);
     }
-    
-    _H = Mat(4, 8);
+
+    _observationModel = Mat(4, 8);
     for (int i = 0; i < 4; i++) {
-      _H.set(i, i, 1.0);
+      _observationModel.set(i, i, 1.0);
     }
   }
 
   void initiate(List<double> measurement) {
-    _x = Mat(8, 1);
+    _stateEstimate = Mat(8, 1);
     for (int i = 0; i < 4; i++) {
-      _x.set(i, 0, measurement[i]);
+      _stateEstimate.set(i, 0, measurement[i]);
     }
 
-    double cx = measurement[0];
-    double cy = measurement[1];
-    double a = measurement[2];
-    double h = measurement[3];
+    final double h = measurement[3];
 
     List<double> std = [
       2 * _stdWeightPosition * h,
@@ -174,14 +168,14 @@ class KalmanFilter {
       10 * _stdWeightVelocity * h
     ];
 
-    _P = Mat.eye(8);
+    _errorCovariance = Mat.eye(8);
     for (int i = 0; i < 8; i++) {
-      _P.set(i, i, std[i] * std[i]);
+      _errorCovariance.set(i, i, std[i] * std[i]);
     }
   }
 
   void predict() {
-    double h = _x.get(3, 0);
+    double h = _stateEstimate.get(3, 0);
     List<double> std = [
       _stdWeightPosition * h,
       _stdWeightPosition * h,
@@ -192,26 +186,26 @@ class KalmanFilter {
       1e-5,
       _stdWeightVelocity * h
     ];
-    _Q = Mat.eye(8);
+    _processNoise = Mat.eye(8);
     for (int i = 0; i < 8; i++) {
-      _Q.set(i, i, std[i] * std[i]);
+      _processNoise.set(i, i, std[i] * std[i]);
     }
 
-    _x = _F.mul(_x);
-    _P = _F.mul(_P).mul(_F.transpose()).add(_Q);
+    _stateEstimate = _stateTransition.mul(_stateEstimate);
+    _errorCovariance = _stateTransition.mul(_errorCovariance).mul(_stateTransition.transpose()).add(_processNoise);
   }
 
   void update(List<double> measurement) {
-    double h = _x.get(3, 0);
+    double h = _stateEstimate.get(3, 0);
     List<double> std = [
       _stdWeightPosition * h,
       _stdWeightPosition * h,
       1e-1,
       _stdWeightPosition * h
     ];
-    _R = Mat.eye(4);
+    _observationNoise = Mat.eye(4);
     for (int i = 0; i < 4; i++) {
-      _R.set(i, i, std[i] * std[i]);
+      _observationNoise.set(i, i, std[i] * std[i]);
     }
 
     Mat z = Mat(4, 1);
@@ -219,20 +213,20 @@ class KalmanFilter {
       z.set(i, 0, measurement[i]);
     }
 
-    Mat y = z.sub(_H.mul(_x));
-    Mat S = _H.mul(_P).mul(_H.transpose()).add(_R);
-    Mat K = _P.mul(_H.transpose()).mul(S.inverse());
+    Mat y = z.sub(_observationModel.mul(_stateEstimate));
+    Mat s = _observationModel.mul(_errorCovariance).mul(_observationModel.transpose()).add(_observationNoise);
+    Mat k = _errorCovariance.mul(_observationModel.transpose()).mul(s.inverse());
 
-    _x = _x.add(K.mul(y));
-    _P = Mat.eye(8).sub(K.mul(_H)).mul(_P);
+    _stateEstimate = _stateEstimate.add(k.mul(y));
+    _errorCovariance = Mat.eye(8).sub(k.mul(_observationModel)).mul(_errorCovariance);
   }
 
   List<double> getState() {
     return [
-      _x.get(0, 0),
-      _x.get(1, 0),
-      _x.get(2, 0),
-      _x.get(3, 0),
+      _stateEstimate.get(0, 0),
+      _stateEstimate.get(1, 0),
+      _stateEstimate.get(2, 0),
+      _stateEstimate.get(3, 0),
     ];
   }
 }

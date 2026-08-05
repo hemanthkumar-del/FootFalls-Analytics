@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'dart:ui';
-import 'package:flutter/foundation.dart';
 import 'track_state.dart';
 import 'kalman_filter.dart';
 import '../detection_result.dart';

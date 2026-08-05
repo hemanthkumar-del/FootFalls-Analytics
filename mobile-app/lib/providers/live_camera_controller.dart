@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:footfalls_app/providers/live_camera_state.dart';
 import 'package:footfalls_app/ai/person_detector.dart';
-import 'package:footfalls_app/camera/camera_frame_converter.dart';
-import 'package:footfalls_app/providers/detection_config_state.dart';
 import 'package:footfalls_app/utils/debug_console.dart';
 import 'package:footfalls_app/ai/tracking/tracker.dart';
 import 'package:footfalls_app/ai/tracking/counter.dart';
@@ -15,11 +13,10 @@ import 'package:footfalls_app/ai/detection_result.dart';
 import 'dart:math';
 
 final liveCameraControllerProvider = StateNotifierProvider.autoDispose<LiveCameraController, LiveCameraState>((ref) {
-  return LiveCameraController(ref);
+  return LiveCameraController();
 });
 
 class LiveCameraController extends StateNotifier<LiveCameraState> {
-  final Ref _ref;
   CameraController? _cameraController;
   final PersonDetector _personDetector = PersonDetector();
   CameraImage? _latestFrame;
@@ -38,11 +35,8 @@ class LiveCameraController extends StateNotifier<LiveCameraState> {
   DateTime _lastFpsTime = DateTime.now();
 
   int _framesReceived = 0;
-  int _framesSkipped = 0;
-  int _framesProcessed = 0;
-  double _avgInferenceTime = 0.0;
 
-  LiveCameraController(this._ref) : super(const LiveCameraState());
+  LiveCameraController() : super(const LiveCameraState());
 
   CameraController? get cameraController => _cameraController;
 
@@ -93,7 +87,7 @@ class LiveCameraController extends StateNotifier<LiveCameraState> {
       
       state = state.copyWith(cameras: cameras, selectedCamera: selectedCamera);
       await _initCameraController(selectedCamera);
-    } catch (e, stack) {
+    } catch (e) {
       state = state.copyWith(errorMessage: 'Failed to initialize camera or AI: $e');
       DebugConsole.updateStat('lastException', e.toString());
       DebugConsole.updateBanner('INIT ERROR');
@@ -141,10 +135,23 @@ class LiveCameraController extends StateNotifier<LiveCameraState> {
     DebugConsole.updateStat('cameraInitialized', true);
 
     _cameraController!.addListener(() {
+      if (_cameraController == null || !mounted) return;
       final val = _cameraController!.value;
-      debugPrint('CameraController Property Changed: isStreamingImages=${val.isStreamingImages}, isInitialized=${val.isInitialized}, hasError=${val.hasError}, errorDescription=${val.errorDescription}');
+      // Stream recovery: if the plugin reports streaming stopped but our state
+      // still expects it to be running, restart the image stream.
+      // This handles transient Camera2 errors that propagate through the
+      // EventChannel and cause the plugin to set isStreamingImages = false.
       if (!val.isStreamingImages && state.isStreamingFrames) {
-        DebugConsole.addLog(file: 'live_camera_controller.dart', function: 'addListener', message: 'isStreamingImages DROPPED TO FALSE! Error: ${val.errorDescription}', color: LogColor.red);
+        DebugConsole.addLog(
+          file: 'live_camera_controller.dart',
+          function: 'addListener',
+          message: 'Stream dropped unexpectedly (isStreamingImages=false). Restarting…',
+          color: LogColor.red,
+        );
+        // Reset our flag so startImageStream() guard allows re-entry.
+        state = state.copyWith(isStreamingFrames: false);
+        // Restart the image stream.
+        startImageStream();
       }
     });
 
@@ -164,13 +171,9 @@ class LiveCameraController extends StateNotifier<LiveCameraState> {
     DebugConsole.addLog(file: 'live_camera_controller.dart', function: 'startImageStream', message: 'startImageStream() started', color: LogColor.yellow);
     
     _cameraController!.startImageStream((image) {
-      debugPrint('CAMERA PLUGIN CALLBACK RECEIVED at ${DateTime.now().toIso8601String()} (Frame #${_framesReceived + 1})');
       _framesReceived++;
       DebugConsole.updateStat('framesReceived', _framesReceived);
 
-      if (_latestFrame != null) {
-        _framesSkipped++;
-      }
       _latestFrame = image;
 
       _frameCount++;
@@ -209,16 +212,20 @@ class LiveCameraController extends StateNotifier<LiveCameraState> {
           final int inputWidth = isRotated ? image.height : image.width;
           final int inputHeight = isRotated ? image.width : image.height;
           
+          final plane0BytesCopied = image.planes.isNotEmpty ? Uint8List.fromList(image.planes[0].bytes) : Uint8List(0);
+          final plane1BytesCopied = image.planes.length > 1 ? Uint8List.fromList(image.planes[1].bytes) : Uint8List(0);
+          final plane2BytesCopied = image.planes.length > 2 ? Uint8List.fromList(image.planes[2].bytes) : Uint8List(0);
+
           final data = IsolateInferenceData(
             formatGroup: image.format.group == ImageFormatGroup.yuv420 ? 1 : (image.format.group == ImageFormatGroup.bgra8888 ? 2 : 0),
             width: image.width,
             height: image.height,
-            plane0Bytes: image.planes.isNotEmpty ? image.planes[0].bytes : Uint8List(0),
+            plane0Bytes: plane0BytesCopied,
             plane0BytesPerRow: image.planes.isNotEmpty ? image.planes[0].bytesPerRow : 0,
-            plane1Bytes: image.planes.length > 1 ? image.planes[1].bytes : Uint8List(0),
+            plane1Bytes: plane1BytesCopied,
             plane1BytesPerRow: image.planes.length > 1 ? image.planes[1].bytesPerRow : 0,
             plane1BytesPerPixel: image.planes.length > 1 ? (image.planes[1].bytesPerPixel ?? 1) : 1,
-            plane2Bytes: image.planes.length > 2 ? image.planes[2].bytes : Uint8List(0),
+            plane2Bytes: plane2BytesCopied,
             inputWidth: inputWidth,
             inputHeight: inputHeight,
           );
@@ -227,18 +234,9 @@ class LiveCameraController extends StateNotifier<LiveCameraState> {
           final detections = await _personDetector.detectInIsolate(data);
           final inferenceTime = DateTime.now().difference(inferenceStart).inMilliseconds;
           
-          _framesProcessed++;
-          _avgInferenceTime = (_avgInferenceTime * (_framesProcessed - 1) + inferenceTime) / _framesProcessed;
 
-          if (_framesProcessed % 5 == 0) {
-             debugPrint('Metrics -> Received: $_framesReceived | Skipped: $_framesSkipped | Processed: $_framesProcessed | Avg Inference: ${_avgInferenceTime.toStringAsFixed(1)} ms | Camera FPS: ${state.fps.toStringAsFixed(1)} | Worker FPS: ${_workerFps.toStringAsFixed(1)}');
-          }
-          
           DebugConsole.updateStat('inferenceTime', inferenceTime);
           DebugConsole.updateStat('detectionCount', detections.length);
-          
-          final config = _ref.read(detectionConfigProvider);
-          
           DebugConsole.addLog(file: 'live_camera_controller', function: '_startWorkerLoop', message: 'Detections before ROI: ${detections.length}', color: LogColor.blue);
           
           if (!_counterInitialized) {
@@ -298,7 +296,7 @@ class LiveCameraController extends StateNotifier<LiveCameraState> {
             );
             DebugConsole.incrementStat('framesProcessed');
           }
-        } catch (e, stack) {
+        } catch (e) {
           DebugConsole.addLog(file: 'live_camera_controller.dart', function: '_startWorkerLoop', message: 'FATAL EXCEPTION: $e', color: LogColor.red);
           DebugConsole.updateStat('lastException', e.toString());
           DebugConsole.updateBanner('PIPELINE STOPPED');

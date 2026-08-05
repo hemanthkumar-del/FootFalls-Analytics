@@ -62,8 +62,8 @@ class _DeveloperDebugPanelState extends State<DeveloperDebugPanel> {
       child: SafeArea(
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.85),
-            border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.5))),
+            color: Colors.black.withValues(alpha: 0.85),
+            border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.5))),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -139,7 +139,7 @@ class _DeveloperDebugPanelState extends State<DeveloperDebugPanel> {
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(8),
-                            color: Colors.red.withOpacity(0.3),
+                            color: Colors.red.withValues(alpha: 0.3),
                             child: Text('Last Err: ${stats['lastException']}', style: const TextStyle(color: Colors.redAccent, fontSize: 10)),
                           ),
                       ],
@@ -154,7 +154,7 @@ class _DeveloperDebugPanelState extends State<DeveloperDebugPanel> {
                     return Container(
                       height: 200,
                       decoration: BoxDecoration(
-                        border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.3))),
+                        border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.3))),
                       ),
                       child: ListView.builder(
                         padding: const EdgeInsets.all(8),
@@ -208,9 +208,10 @@ class _DeveloperDebugPanelState extends State<DeveloperDebugPanel> {
                     ),
                     TextButton.icon(
                       onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
                         final path = await DebugConsole.exportLogs();
                         if (mounted && path != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Exported to: $path')));
+                          messenger.showSnackBar(SnackBar(content: Text('Exported to: $path')));
                         }
                       }, 
                       icon: const Icon(Icons.save, size: 16), 

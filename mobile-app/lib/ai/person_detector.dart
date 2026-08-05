@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'dart:isolate';
 import 'dart:async';
 import 'package:flutter/services.dart';
@@ -117,7 +116,10 @@ Future<void> _isolateEntryPoint(Map<String, dynamic> message) async {
   mainSendPort.send(isolateReceivePort.sendPort);
 
   final yolo = YoloService();
+  bool firstInference = true;
   yolo.initializeFromBuffer(modelBytes, labels);
+
+  final Float32List reusableInputBuffer = Float32List(640 * 640 * 3);
 
   try {
     await for (final msg in isolateReceivePort) {
@@ -157,6 +159,28 @@ Future<void> _isolateEntryPoint(Map<String, dynamic> message) async {
               rgbImage = img.copyRotate(rgbImage, 90);
             }
           } else if (data.formatGroup == 2) { // bgra8888 (native fast path)
+            final expectedRowBytes = data.width * 4;
+            final actualRowBytes = data.plane0BytesPerRow;
+            
+            if (firstInference) {
+              debugPrint('=== PART 1: BGRA VERIFICATION ===');
+              debugPrint('Image width: ${data.width}');
+              debugPrint('Image height: ${data.height}');
+              debugPrint('plane0BytesPerRow: $actualRowBytes');
+              debugPrint('Expected row bytes (width * 4): $expectedRowBytes');
+              debugPrint('Match: ${actualRowBytes == expectedRowBytes ? "YES" : "NO"}');
+              
+              if (actualRowBytes != expectedRowBytes) {
+                debugPrint('WARNING: Row stride padding detected.');
+                DebugConsole.addLog(
+                  file: 'person_detector.dart',
+                  function: 'worker',
+                  message: 'WARNING: Row stride padding detected. actual: $actualRowBytes, expected: $expectedRowBytes',
+                  color: LogColor.red,
+                );
+              }
+            }
+
             rgbImage = img.Image.fromBytes(
               data.width,
               data.height,
@@ -168,28 +192,78 @@ Future<void> _isolateEntryPoint(Map<String, dynamic> message) async {
             }
           }
 
+
+          // ── WORKER STAGE A: float32 tensor preparation ────────────────────────
           Float32List float32List;
-          if (rgbImage != null) {
-            TensorImage tensorImage = TensorImage.fromImage(rgbImage);
-            ImageProcessor imageProcessor = ImageProcessorBuilder()
-                .add(ResizeOp(640, 640, ResizeMethod.bilinear))
-                .build();
-            
-            tensorImage = imageProcessor.process(tensorImage);
-            
-            final uint8List = tensorImage.buffer.asUint8List();
-            float32List = Float32List(uint8List.length);
-            for (int i = 0; i < uint8List.length; i++) {
-              float32List[i] = uint8List[i] / 255.0;
+          try {
+            if (rgbImage != null) {
+              TensorImage tensorImage = TensorImage.fromImage(rgbImage);
+              ImageProcessor imageProcessor = ImageProcessorBuilder()
+                  .add(ResizeOp(640, 640, ResizeMethod.bilinear))
+                  .build();
+              
+              tensorImage = imageProcessor.process(tensorImage);
+              
+              final uint8List = tensorImage.buffer.asUint8List();
+              final len = uint8List.length < reusableInputBuffer.length ? uint8List.length : reusableInputBuffer.length;
+              for (int i = 0; i < len; i++) {
+                reusableInputBuffer[i] = uint8List[i] / 255.0;
+              }
+              float32List = reusableInputBuffer;
+            } else {
+              reusableInputBuffer.fillRange(0, reusableInputBuffer.length, 0.0);
+              float32List = reusableInputBuffer;
             }
-          } else {
-            float32List = Float32List(640 * 640 * 3);
+          } catch (e, stack) {
+            debugPrint('=============================='  );
+            debugPrint('WORKER STAGE A FAILED: tensor preparation');
+            debugPrint('Exception Type: ${e.runtimeType}');
+            debugPrint('Exception:');
+            debugPrint('$e');
+            debugPrint('STACK TRACE:');
+            debugPrint('$stack');
+            debugPrint('rgbImage: ${rgbImage?.width}x${rgbImage?.height}');
+            debugPrint('=============================='  );
+            DebugConsole.addLog(
+              file: 'person_detector.dart',
+              function: 'worker',
+              message: 'WORKER STAGE A FAILED (tensor prep): $e',
+              color: LogColor.red,
+            );
+            msg.replyPort.send(<DetectionResult>[]);
+            continue;
           }
           
           final preprocTime = DateTime.now().difference(preprocStart).inMilliseconds;
 
+          // ── WORKER STAGE B: yolo.infer() ────────────────────────────────
           final inferenceStart = DateTime.now();
-          final results = yolo.infer(float32List, data.inputWidth, data.inputHeight);
+          List<DetectionResult> results;
+          try {
+            results = yolo.infer(float32List, data.inputWidth, data.inputHeight, firstInference, data.formatGroup == 2 ? (data.plane0BytesPerRow == data.width * 4) : true);
+            firstInference = false;
+          } catch (e, stack) {
+            debugPrint('=============================='  );
+            debugPrint('WORKER STAGE B FAILED: yolo.infer()');
+            debugPrint('Exception Type: ${e.runtimeType}');
+            debugPrint('Exception:');
+            debugPrint('$e');
+            debugPrint('STACK TRACE:');
+            debugPrint('$stack');
+            debugPrint('float32List.length: ${float32List.length}');
+            debugPrint('inputWidth: ${data.inputWidth} | inputHeight: ${data.inputHeight}');
+            debugPrint('formatGroup: ${data.formatGroup}');
+            debugPrint('=============================='  );
+            DebugConsole.addLog(
+              file: 'person_detector.dart',
+              function: 'worker',
+              message: 'WORKER STAGE B FAILED (yolo.infer): $e\n$stack',
+              color: LogColor.red,
+            );
+            msg.replyPort.send(<DetectionResult>[]);
+            continue;
+          }
+
           final inferenceTime = DateTime.now().difference(inferenceStart).inMilliseconds;
           
           DebugConsole.addLog(
@@ -200,6 +274,14 @@ Future<void> _isolateEntryPoint(Map<String, dynamic> message) async {
           );
           msg.replyPort.send(results);
         } catch (e, stack) {
+          debugPrint('=============================='  );
+          debugPrint('FRAME PROCESSING FAILED (outer catch)');
+          debugPrint('Exception Type: ${e.runtimeType}');
+          debugPrint('Exception:');
+          debugPrint('$e');
+          debugPrint('STACK TRACE:');
+          debugPrint('$stack');
+          debugPrint('=============================='  );
           DebugConsole.addLog(
             file: 'person_detector.dart',
             function: '_isolateEntryPoint (frame processing)',
@@ -211,6 +293,14 @@ Future<void> _isolateEntryPoint(Map<String, dynamic> message) async {
       }
     }
   } catch (e, stack) {
+    debugPrint('=============================='  );
+    debugPrint('ISOLATE MAIN LOOP FAILED');
+    debugPrint('Exception Type: ${e.runtimeType}');
+    debugPrint('Exception:');
+    debugPrint('$e');
+    debugPrint('STACK TRACE:');
+    debugPrint('$stack');
+    debugPrint('=============================='  );
     DebugConsole.addLog(
       file: 'person_detector.dart',
       function: '_isolateEntryPoint (main loop)',
